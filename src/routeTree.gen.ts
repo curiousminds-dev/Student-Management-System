@@ -11,7 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AttendanceRouteImport } from './routes/attendance'
+import { Route as ObservationsRouteImport } from './routes/observations'
+import { Route as OccasionsRouteImport } from './routes/occasions'
+import { Route as ScanRouteImport } from './routes/scan'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as LearnersIndexRouteImport } from './routes/learners.index'
+import { Route as LearnersIdRouteImport } from './routes/learners.$id'
 import { Route as LearnersNewRouteImport } from './routes/learners.new'
 
 const IndexRoute = IndexRouteImport.update({
@@ -24,9 +29,34 @@ const AttendanceRoute = AttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ObservationsRoute = ObservationsRouteImport.update({
+  id: '/observations',
+  path: '/observations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OccasionsRoute = OccasionsRouteImport.update({
+  id: '/occasions',
+  path: '/occasions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LearnersIndexRoute = LearnersIndexRouteImport.update({
   id: '/learners/',
   path: '/learners/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnersIdRoute = LearnersIdRouteImport.update({
+  id: '/learners/$id',
+  path: '/learners/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LearnersNewRoute = LearnersNewRouteImport.update({
@@ -38,12 +68,22 @@ const LearnersNewRoute = LearnersNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/observations': typeof ObservationsRoute
+  '/occasions': typeof OccasionsRoute
+  '/scan': typeof ScanRoute
+  '/staff': typeof StaffRoute
+  '/learners/$id': typeof LearnersIdRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners/': typeof LearnersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/observations': typeof ObservationsRoute
+  '/occasions': typeof OccasionsRoute
+  '/scan': typeof ScanRoute
+  '/staff': typeof StaffRoute
+  '/learners/$id': typeof LearnersIdRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners': typeof LearnersIndexRoute
 }
@@ -51,20 +91,58 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/observations': typeof ObservationsRoute
+  '/occasions': typeof OccasionsRoute
+  '/scan': typeof ScanRoute
+  '/staff': typeof StaffRoute
+  '/learners/$id': typeof LearnersIdRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners/': typeof LearnersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/attendance' | '/learners/new' | '/learners/'
+  fullPaths:
+    | '/'
+    | '/attendance'
+    | '/observations'
+    | '/occasions'
+    | '/scan'
+    | '/staff'
+    | '/learners/$id'
+    | '/learners/new'
+    | '/learners/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/attendance' | '/learners/new' | '/learners'
-  id: '__root__' | '/' | '/attendance' | '/learners/new' | '/learners/'
+  to:
+    | '/'
+    | '/attendance'
+    | '/observations'
+    | '/occasions'
+    | '/scan'
+    | '/staff'
+    | '/learners/$id'
+    | '/learners/new'
+    | '/learners'
+  id:
+    | '__root__'
+    | '/'
+    | '/attendance'
+    | '/observations'
+    | '/occasions'
+    | '/scan'
+    | '/staff'
+    | '/learners/$id'
+    | '/learners/new'
+    | '/learners/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttendanceRoute: typeof AttendanceRoute
+  ObservationsRoute: typeof ObservationsRoute
+  OccasionsRoute: typeof OccasionsRoute
+  ScanRoute: typeof ScanRoute
+  StaffRoute: typeof StaffRoute
+  LearnersIdRoute: typeof LearnersIdRoute
   LearnersNewRoute: typeof LearnersNewRoute
   LearnersIndexRoute: typeof LearnersIndexRoute
 }
@@ -85,11 +163,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AttendanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/observations': {
+      id: '/observations'
+      path: '/observations'
+      fullPath: '/observations'
+      preLoaderRoute: typeof ObservationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/occasions': {
+      id: '/occasions'
+      path: '/occasions'
+      fullPath: '/occasions'
+      preLoaderRoute: typeof OccasionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/learners/': {
       id: '/learners/'
       path: '/learners'
       fullPath: '/learners/'
       preLoaderRoute: typeof LearnersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learners/$id': {
+      id: '/learners/$id'
+      path: '/learners/$id'
+      fullPath: '/learners/$id'
+      preLoaderRoute: typeof LearnersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/learners/new': {
@@ -105,6 +218,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttendanceRoute: AttendanceRoute,
+  ObservationsRoute: ObservationsRoute,
+  OccasionsRoute: OccasionsRoute,
+  ScanRoute: ScanRoute,
+  StaffRoute: StaffRoute,
+  LearnersIdRoute: LearnersIdRoute,
   LearnersNewRoute: LearnersNewRoute,
   LearnersIndexRoute: LearnersIndexRoute,
 }

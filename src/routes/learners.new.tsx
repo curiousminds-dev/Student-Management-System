@@ -611,7 +611,7 @@ function ConsentStep({ defaultValues, onBack, onSubmit }: { defaultValues: Conse
         <FormField control={form.control} name="photoConsent" render={({ field }) => (
           <FormItem className="flex flex-row items-start gap-2 space-y-0 rounded-lg border border-border p-3">
             <FormControl>
-              <Checkbox checked={field.value} onCheckedChange={field.onChange} aria-label="Photo consent" />
+              <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} aria-label="Photo consent" />
             </FormControl>
             <div>
               <FormLabel className="font-medium">Guardian consents to use of learner's photo</FormLabel>
