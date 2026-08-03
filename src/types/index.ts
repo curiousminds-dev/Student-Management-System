@@ -118,9 +118,9 @@ export interface Guardian {
   name: string;
   relationship: string;
   phone: string;
-  alternatePhone?: string;
-  email?: string;
-  occupation?: string;
+  alternatePhone?: string | undefined;
+  email?: string | undefined;
+  occupation?: string | undefined;
 }
 
 export interface QRCredential {
@@ -141,7 +141,7 @@ export interface Learner {
   fullName: string;
   admissionNumber: string;
   lin: string;
-  unebNumber?: string;
+  unebNumber?: string | undefined;
   className: LearnerClass;
   stream: string;
   gender: "Male" | "Female";
@@ -160,7 +160,7 @@ export interface Learner {
   enrolledOn: string;
   campusId: UUID;
   photoHue: number;
-  medicalNotes?: string;
+  medicalNotes?: string | undefined;
 }
 
 export type OccasionCategory =
@@ -407,8 +407,8 @@ export interface AuditEvent {
   ip: string;
   reason: string | null;
   result: "success" | "denied" | "failed";
-  before?: Record<string, string>;
-  after?: Record<string, string>;
+  before?: Record<string, string> | undefined;
+  after?: Record<string, string> | undefined;
 }
 
 export interface DashboardSummary {
