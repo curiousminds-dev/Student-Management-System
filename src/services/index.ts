@@ -1,0 +1,320 @@
+import {
+  ASSESSMENTS,
+  ATTENDANCE_RECORDS,
+  ATTENDANCE_TREND,
+  AUDIT_EVENTS,
+  AUTHORIZED_ABSENCES,
+  CASES,
+  CLASS_RATES,
+  DEVICES,
+  HEALTH_ENCOUNTERS,
+  INTERVENTIONS,
+  LEARNERS,
+  MESSAGES,
+  OBSERVATIONS,
+  OCCASIONS,
+  SCANS,
+  SCHOOL,
+  STAFF,
+  SUBJECTS,
+  SYNC_HISTORY,
+  TERMS,
+} from "@/lib/mock/data";
+import { ROLES } from "@/lib/roles";
+import { mock, paginate, request, USE_MOCK_DATA } from "./api-client";
+import type {
+  Assessment,
+  AttendanceOccasion,
+  AttendanceRecord,
+  AuditEvent,
+  AuthorizedAbsence,
+  ConductCase,
+  DashboardSummary,
+  Device,
+  HealthEncounter,
+  Intervention,
+  Learner,
+  NotificationMessage,
+  Observation,
+  Paginated,
+  RoleKey,
+  ScanEvent,
+  Staff,
+  Subject,
+  SyncRecord,
+  User,
+} from "@/types";
+
+/* ---------------------------------------------------------------- auth --- */
+
+export const authService = {
+  async login(role: RoleKey, name: string, email: string): Promise<User> {
+    if (!USE_MOCK_DATA) return request<User>("/auth/login", { method: "POST", body: JSON.stringify({ email }) });
+    const r = ROLES[role];
+    const staff = STAFF.find((s) => s.role === role);
+    return mock<User>({
+      id: `usr-${role}`,
+      staffId: staff?.id ?? "stf-001",
+      name,
+      email,
+      role,
+      roleName: r.name,
+      campusId: "cmp-1",
+      permissions: r.permissions,
+    });
+  },
+  async me(): Promise<User | null> {
+    if (!USE_MOCK_DATA) return request<User>("/auth/me");
+    return mock<User | null>(null, 0);
+  },
+};
+
+/* ----------------------------------------------------------- dashboard --- */
+
+export const dashboardService = {
+  async summary(roleName: string): Promise<DashboardSummary> {
+    if (!USE_MOCK_DATA) return request<DashboardSummary>("/dashboard");
+    const present = ATTENDANCE_RECORDS.filter((r) => r.status === "present").length;
+    const late = ATTENDANCE_RECORDS.filter((r) => r.status === "late").length;
+    const unexplained = ATTENDANCE_RECORDS.filter((r) => r.status === "unexplained");
+    return mock<DashboardSummary>(() => ({
+      greetingName: roleName,
+      date: "Monday, 3 August 2026",
+      term: "Term Two · 2026",
+      metrics: [
+        { key: "learners", label: "Active learners", value: LEARNERS.length, change: "+6 this term", trend: "up", tone: "navy" },
+        { key: "present", label: "Present today", value: present, change: "94.2% of expected", trend: "up", tone: "cyan" },
+        { key: "late", label: "Late today", value: late, change: "-4 vs yesterday", trend: "down", tone: "warning" },
+        { key: "unexplained", label: "Unexplained absences", value: unexplained.length, change: "Awaiting reconciliation", trend: "flat", tone: "warning" },
+        { key: "welfare", label: "Open welfare concerns", value: OBSERVATIONS.filter((o) => o.category === "Welfare concern").length, change: "3 under review", trend: "flat", tone: "info" },
+        { key: "devices", label: "Devices awaiting sync", value: DEVICES.filter((d) => d.status !== "synced").length, change: "1 with conflicts", trend: "down", tone: "success" },
+      ],
+      attendanceTrend: ATTENDANCE_TREND,
+      statusDistribution: [
+        { name: "Present", value: present },
+        { name: "Late", value: late },
+        { name: "Excused", value: ATTENDANCE_RECORDS.filter((r) => r.status === "excused").length },
+        { name: "Unexplained", value: unexplained.length },
+      ],
+      attendanceByClass: CLASS_RATES,
+      caseStatus: [
+        { name: "Observations", open: OBSERVATIONS.length, closed: 22 },
+        { name: "Cases", open: CASES.filter((c) => !c.closed).length, closed: CASES.filter((c) => c.closed).length },
+        { name: "Interventions", open: INTERVENTIONS.filter((i) => i.status === "active").length, closed: INTERVENTIONS.filter((i) => i.status === "completed").length },
+      ],
+      todaysOccasions: OCCASIONS.slice(0, 6),
+      unexplainedAbsences: unexplained.slice(0, 6),
+      seriousCases: CASES.filter((c) => !c.closed).slice(0, 4),
+      deviceIssues: DEVICES.filter((d) => d.status !== "synced").slice(0, 4),
+      recentStaffActions: AUDIT_EVENTS.slice(0, 6),
+    }));
+  },
+};
+
+/* ------------------------------------------------------------ learners --- */
+
+export interface LearnerQuery {
+  search?: string;
+  className?: string;
+  stream?: string;
+  residence?: string;
+  gender?: string;
+  status?: string;
+  qrStatus?: string;
+  sortBy?: keyof Learner;
+  sortDir?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
+}
+
+export const learnerService = {
+  async list(query: LearnerQuery = {}): Promise<Paginated<Learner>> {
+    if (!USE_MOCK_DATA) return request<Paginated<Learner>>(`/learners`);
+    const {
+      search = "", className = "all", stream = "all", residence = "all",
+      gender = "all", status = "all", qrStatus = "all",
+      sortBy = "fullName", sortDir = "asc", page = 1, pageSize = 12,
+    } = query;
+    const q = search.trim().toLowerCase();
+    let rows = LEARNERS.filter((l) => {
+      if (q && !`${l.fullName} ${l.admissionNumber} ${l.lin}`.toLowerCase().includes(q)) return false;
+      if (className !== "all" && l.className !== className) return false;
+      if (stream !== "all" && l.stream !== stream) return false;
+      if (residence !== "all" && l.residence !== residence) return false;
+      if (gender !== "all" && l.gender !== gender) return false;
+      if (status !== "all" && l.status !== status) return false;
+      if (qrStatus !== "all" && l.qrStatus !== qrStatus) return false;
+      return true;
+    });
+    rows = [...rows].sort((a, b) => {
+      const av = a[sortBy] as string | number;
+      const bv = b[sortBy] as string | number;
+      const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return mock(paginate(rows, page, pageSize));
+  },
+  async byId(id: string): Promise<Learner> {
+    if (!USE_MOCK_DATA) return request<Learner>(`/learners/${id}`);
+    const learner = LEARNERS.find((l) => l.id === id);
+    if (!learner) throw new Error("Learner not found");
+    return mock(learner);
+  },
+  async create(payload: Partial<Learner>): Promise<Learner> {
+    if (!USE_MOCK_DATA) return request<Learner>("/learners", { method: "POST", body: JSON.stringify(payload) });
+    return mock({ ...LEARNERS[0]!, ...payload, id: `lnr-new-${Date.now()}` } as Learner, 600);
+  },
+  async credentials(id: string) {
+    if (!USE_MOCK_DATA) return request(`/learners/${id}/qr-credentials`);
+    const learner = LEARNERS.find((l) => l.id === id)!;
+    return mock([
+      { id: "qr-1", learnerId: id, serial: learner.qrSerial, status: learner.qrStatus, issuedOn: "2026-02-06", issuedBy: "Grace Nakabugo" },
+      { id: "qr-0", learnerId: id, serial: `QR-OLD-${learner.qrSerial.slice(-4)}`, status: "replaced" as const, issuedOn: "2025-02-11", issuedBy: "Grace Nakabugo", revokedOn: "2026-02-05", revokedReason: "Card reported lost" },
+    ]);
+  },
+  async observations(id: string) {
+    return mock(OBSERVATIONS.filter((o) => o.learnerId === id));
+  },
+  async attendance(id: string) {
+    return mock(ATTENDANCE_RECORDS.filter((r) => r.learnerId === id));
+  },
+};
+
+/* ---------------------------------------------------------- attendance --- */
+
+export const attendanceService = {
+  async records(filters: { search?: string; className?: string; status?: string; occasionId?: string } = {}): Promise<AttendanceRecord[]> {
+    if (!USE_MOCK_DATA) return request<AttendanceRecord[]>("/attendance");
+    const q = (filters.search ?? "").toLowerCase();
+    return mock(
+      ATTENDANCE_RECORDS.filter((r) => {
+        if (q && !`${r.learnerName} ${r.admissionNumber}`.toLowerCase().includes(q)) return false;
+        if (filters.className && filters.className !== "all" && r.className !== filters.className) return false;
+        if (filters.status && filters.status !== "all" && r.status !== filters.status) return false;
+        if (filters.occasionId && filters.occasionId !== "all" && r.occasionId !== filters.occasionId) return false;
+        return true;
+      }),
+    );
+  },
+  async occasions(): Promise<AttendanceOccasion[]> {
+    if (!USE_MOCK_DATA) return request<AttendanceOccasion[]>("/attendance/occasions");
+    return mock(OCCASIONS);
+  },
+  async scans(): Promise<ScanEvent[]> {
+    if (!USE_MOCK_DATA) return request<ScanEvent[]>("/attendance/scans");
+    return mock(SCANS);
+  },
+  async authorizedAbsences(): Promise<AuthorizedAbsence[]> {
+    return mock(AUTHORIZED_ABSENCES);
+  },
+};
+
+/* ------------------------------------------------------------- devices --- */
+
+export const deviceService = {
+  async list(): Promise<Device[]> {
+    if (!USE_MOCK_DATA) return request<Device[]>("/devices");
+    return mock(DEVICES);
+  },
+  async history(): Promise<SyncRecord[]> {
+    if (!USE_MOCK_DATA) return request<SyncRecord[]>("/attendance/sync");
+    return mock(SYNC_HISTORY);
+  },
+  async sync(deviceId: string) {
+    return mock({ deviceId, ok: true }, 900);
+  },
+};
+
+/* --------------------------------------------------- support & welfare --- */
+
+export const supportService = {
+  async observations(): Promise<Observation[]> {
+    if (!USE_MOCK_DATA) return request<Observation[]>("/observations");
+    return mock(OBSERVATIONS);
+  },
+  async createObservation(payload: Partial<Observation>) {
+    return mock({ ...OBSERVATIONS[0]!, ...payload, id: `obs-${Date.now()}` }, 600);
+  },
+  async cases(): Promise<ConductCase[]> {
+    if (!USE_MOCK_DATA) return request<ConductCase[]>("/cases");
+    return mock(CASES);
+  },
+  async interventions(): Promise<Intervention[]> {
+    if (!USE_MOCK_DATA) return request<Intervention[]>("/interventions");
+    return mock(INTERVENTIONS);
+  },
+  async welfare(): Promise<{
+    absences: AuthorizedAbsence[];
+    health: HealthEncounter[];
+    concerns: Observation[];
+    interventions: Intervention[];
+  }> {
+    if (!USE_MOCK_DATA) return request("/welfare");
+    return mock({
+      absences: AUTHORIZED_ABSENCES,
+      health: HEALTH_ENCOUNTERS,
+      concerns: OBSERVATIONS.filter((o) => o.category === "Welfare concern"),
+      interventions: INTERVENTIONS,
+    });
+  },
+};
+
+/* ----------------------------------------------------------- academics --- */
+
+export const academicsService = {
+  async subjects(): Promise<Subject[]> {
+    if (!USE_MOCK_DATA) return request<Subject[]>("/academics");
+    return mock(SUBJECTS);
+  },
+  async assessments(): Promise<Assessment[]> {
+    return mock(ASSESSMENTS);
+  },
+};
+
+/* --------------------------------------------------------------- staff --- */
+
+export const staffService = {
+  async list(): Promise<Staff[]> {
+    if (!USE_MOCK_DATA) return request<Staff[]>("/staff");
+    return mock(STAFF);
+  },
+  async roles() {
+    if (!USE_MOCK_DATA) return request("/roles");
+    return mock(Object.values(ROLES));
+  },
+};
+
+/* ------------------------------------------- communication & audit etc --- */
+
+export const communicationService = {
+  async messages(): Promise<NotificationMessage[]> {
+    if (!USE_MOCK_DATA) return request<NotificationMessage[]>("/notifications");
+    return mock(MESSAGES);
+  },
+  async send(payload: { template: string; audience: string; body: string }) {
+    return mock({ ...payload, id: `msg-${Date.now()}` }, 700);
+  },
+};
+
+export const auditService = {
+  async list(): Promise<AuditEvent[]> {
+    if (!USE_MOCK_DATA) return request<AuditEvent[]>("/audit-logs");
+    return mock(AUDIT_EVENTS);
+  },
+};
+
+export const settingsService = {
+  async school() {
+    if (!USE_MOCK_DATA) return request("/settings");
+    return mock({ school: SCHOOL, terms: TERMS });
+  },
+  async save(section: string) {
+    return mock({ section, saved: true }, 700);
+  },
+};
+
+export const reportService = {
+  async generate(reportId: string) {
+    return mock({ reportId, url: "#", generatedAt: new Date().toISOString() }, 900);
+  },
+};
