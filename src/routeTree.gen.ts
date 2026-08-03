@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AttendanceRouteImport } from './routes/attendance'
+import { Route as CasesRouteImport } from './routes/cases'
 import { Route as ObservationsRouteImport } from './routes/observations'
 import { Route as OccasionsRouteImport } from './routes/occasions'
 import { Route as ScanRouteImport } from './routes/scan'
@@ -27,6 +28,11 @@ const IndexRoute = IndexRouteImport.update({
 const AttendanceRoute = AttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasesRoute = CasesRouteImport.update({
+  id: '/cases',
+  path: '/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ObservationsRoute = ObservationsRouteImport.update({
@@ -68,6 +74,7 @@ const LearnersNewRoute = LearnersNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/cases': typeof CasesRoute
   '/observations': typeof ObservationsRoute
   '/occasions': typeof OccasionsRoute
   '/scan': typeof ScanRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/cases': typeof CasesRoute
   '/observations': typeof ObservationsRoute
   '/occasions': typeof OccasionsRoute
   '/scan': typeof ScanRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/cases': typeof CasesRoute
   '/observations': typeof ObservationsRoute
   '/occasions': typeof OccasionsRoute
   '/scan': typeof ScanRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/attendance'
+    | '/cases'
     | '/observations'
     | '/occasions'
     | '/scan'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/attendance'
+    | '/cases'
     | '/observations'
     | '/occasions'
     | '/scan'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/attendance'
+    | '/cases'
     | '/observations'
     | '/occasions'
     | '/scan'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttendanceRoute: typeof AttendanceRoute
+  CasesRoute: typeof CasesRoute
   ObservationsRoute: typeof ObservationsRoute
   OccasionsRoute: typeof OccasionsRoute
   ScanRoute: typeof ScanRoute
@@ -161,6 +174,13 @@ declare module '@tanstack/react-router' {
       path: '/attendance'
       fullPath: '/attendance'
       preLoaderRoute: typeof AttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cases': {
+      id: '/cases'
+      path: '/cases'
+      fullPath: '/cases'
+      preLoaderRoute: typeof CasesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/observations': {
@@ -218,6 +238,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttendanceRoute: AttendanceRoute,
+  CasesRoute: CasesRoute,
   ObservationsRoute: ObservationsRoute,
   OccasionsRoute: OccasionsRoute,
   ScanRoute: ScanRoute,
@@ -229,3 +250,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
