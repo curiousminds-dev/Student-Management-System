@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as LearnersIndexRouteImport } from './routes/learners.index'
 import { Route as LearnersNewRouteImport } from './routes/learners.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AttendanceRoute = AttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LearnersIndexRoute = LearnersIndexRouteImport.update({
@@ -31,30 +37,34 @@ const LearnersNewRoute = LearnersNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/attendance': typeof AttendanceRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners/': typeof LearnersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/attendance': typeof AttendanceRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners': typeof LearnersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/attendance': typeof AttendanceRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners/': typeof LearnersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/learners/new' | '/learners/'
+  fullPaths: '/' | '/attendance' | '/learners/new' | '/learners/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/learners/new' | '/learners'
-  id: '__root__' | '/' | '/learners/new' | '/learners/'
+  to: '/' | '/attendance' | '/learners/new' | '/learners'
+  id: '__root__' | '/' | '/attendance' | '/learners/new' | '/learners/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AttendanceRoute: typeof AttendanceRoute
   LearnersNewRoute: typeof LearnersNewRoute
   LearnersIndexRoute: typeof LearnersIndexRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/attendance': {
+      id: '/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof AttendanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/learners/': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AttendanceRoute: AttendanceRoute,
   LearnersNewRoute: LearnersNewRoute,
   LearnersIndexRoute: LearnersIndexRoute,
 }

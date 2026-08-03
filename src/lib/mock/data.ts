@@ -523,3 +523,93 @@ export const ATTENDANCE_TREND = [
 ];
 
 export const CLASS_RATES = CLASSES.map((c) => ({ className: c.replace("Senior ", "S"), rate: int(84, 99) }));
+
+export const GRADE_BOUNDARIES: import("@/types").GradeBoundary[] = [
+  { id: "gb-1", grade: "D1", minMark: 90, maxMark: 100, points: 1, descriptor: "Distinction 1" },
+  { id: "gb-2", grade: "D2", minMark: 80, maxMark: 89, points: 2, descriptor: "Distinction 2" },
+  { id: "gb-3", grade: "C3", minMark: 70, maxMark: 79, points: 3, descriptor: "Credit 3" },
+  { id: "gb-4", grade: "C4", minMark: 65, maxMark: 69, points: 4, descriptor: "Credit 4" },
+  { id: "gb-5", grade: "C5", minMark: 60, maxMark: 64, points: 5, descriptor: "Credit 5" },
+  { id: "gb-6", grade: "C6", minMark: 55, maxMark: 59, points: 6, descriptor: "Credit 6" },
+  { id: "gb-7", grade: "P7", minMark: 45, maxMark: 54, points: 7, descriptor: "Pass 7" },
+  { id: "gb-8", grade: "P8", minMark: 35, maxMark: 44, points: 8, descriptor: "Pass 8" },
+  { id: "gb-9", grade: "F9", minMark: 0, maxMark: 34, points: 9, descriptor: "Fail 9" },
+];
+
+const COMPETENCIES = ["Communication", "Critical thinking", "Cooperation", "Self-directed learning", "Generation of new ideas"];
+
+export const COMPETENCY_RECORDS: import("@/types").CompetencyRecord[] = LEARNERS.slice(0, 60)
+  .filter((l) => ["Senior One", "Senior Two", "Senior Three", "Senior Four"].includes(l.className))
+  .flatMap((l, i) =>
+    [pick(COMPETENCIES), pick(COMPETENCIES)].map((competency, j) => ({
+      id: `cmp-${i}-${j}`,
+      learnerId: l.id,
+      learnerName: l.fullName,
+      className: `${l.className} ${l.stream}`,
+      subject: pick(SUBJECTS.filter((s) => s.level === "O-Level")).name,
+      competency,
+      level: pick([
+        "Exceeding expectation",
+        "Meeting expectation",
+        "Meeting expectation",
+        "Approaching expectation",
+        "Below expectation",
+      ]) as import("@/types").CompetencyLevel,
+      term: "Term Two 2026",
+    })),
+  );
+
+export const SUBJECT_ANALYSIS: import("@/types").SubjectAnalysisRow[] = SUBJECTS.map((s) => {
+  const average = int(52, 84);
+  return { subject: s.name, average, highest: Math.min(100, average + int(10, 16)), lowest: Math.max(20, average - int(20, 35)), passRate: int(58, 96) };
+});
+
+export const CLASS_ANALYSIS: import("@/types").ClassAnalysisRow[] = CLASSES.map((c) => ({
+  className: c,
+  average: int(55, 82),
+  passRate: int(60, 95),
+  ranking: 0,
+})).sort((a, b) => b.average - a.average)
+  .map((r, i) => ({ ...r, ranking: i + 1 }));
+
+export const LEARNER_PROGRESS: import("@/types").LearnerProgressRow[] = LEARNERS.slice(0, 30).map((l, i) => {
+  const termOne = int(48, 88);
+  const termTwo = int(48, 88);
+  const termThree = int(48, 88);
+  return {
+    learnerId: l.id,
+    learnerName: l.fullName,
+    className: `${l.className} ${l.stream}`,
+    termOne,
+    termTwo,
+    termThree,
+    trend: termThree > termTwo ? "up" : termThree < termTwo ? "down" : "flat",
+    position: i + 1,
+  };
+});
+
+export const MISSING_WORK: import("@/types").MissingWorkRow[] = ASSESSMENTS.filter((a) => a.entered < a.expected)
+  .slice(0, 16)
+  .flatMap((a, i) =>
+    LEARNERS.slice(i * 2, i * 2 + 2).map((l, j) => ({
+      id: `mw-${i}-${j}`,
+      learnerId: l.id,
+      learnerName: l.fullName,
+      className: `${l.className} ${l.stream}`,
+      subject: a.subject,
+      assessment: a.name,
+      dueDate: a.dueDate,
+    })),
+  );
+
+export const TEACHER_COMPLETION: import("@/types").TeacherCompletionRow[] = Array.from(
+  new Set(SUBJECTS.map((s) => s.teacher)),
+).map((teacher) => {
+  const subs = SUBJECTS.filter((s) => s.teacher === teacher);
+  return {
+    teacher,
+    subject: subs.map((s) => s.name).join(", "),
+    completion: int(55, 100),
+    outstandingClasses: subs.flatMap((s) => s.classes).slice(0, 2),
+  };
+});

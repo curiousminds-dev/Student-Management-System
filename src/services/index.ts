@@ -1,6 +1,13 @@
 import {
   ASSESSMENTS,
   ATTENDANCE_RECORDS,
+  CLASS_ANALYSIS,
+  COMPETENCY_RECORDS,
+  GRADE_BOUNDARIES,
+  LEARNER_PROGRESS,
+  MISSING_WORK,
+  SUBJECT_ANALYSIS,
+  TEACHER_COMPLETION,
   ATTENDANCE_TREND,
   AUDIT_EVENTS,
   AUTHORIZED_ABSENCES,
@@ -25,6 +32,14 @@ import { mock, paginate, request, USE_MOCK_DATA } from "./api-client";
 import type {
   Assessment,
   AttendanceOccasion,
+  ClassAnalysisRow,
+  CompetencyRecord,
+  GradeBoundary,
+  LearnerProgressRow,
+  MarksGrid,
+  MissingWorkRow,
+  SubjectAnalysisRow,
+  TeacherCompletionRow,
   AttendanceRecord,
   AuditEvent,
   AuthorizedAbsence,
@@ -178,6 +193,24 @@ export const learnerService = {
   async attendance(id: string) {
     return mock(ATTENDANCE_RECORDS.filter((r) => r.learnerId === id));
   },
+  async documents(id: string) {
+    return mock([
+      { id: `doc-${id}-1`, name: "Birth certificate", category: "Identity", uploadedOn: "2026-01-14", uploadedBy: "Grace Nakabugo" },
+      { id: `doc-${id}-2`, name: "Primary Leaving Examination certificate", category: "Academic", uploadedOn: "2026-01-14", uploadedBy: "Grace Nakabugo" },
+      { id: `doc-${id}-3`, name: "Guardian consent form", category: "Consent", uploadedOn: "2026-01-15", uploadedBy: "Grace Nakabugo" },
+      { id: `doc-${id}-4`, name: "Immunisation record", category: "Medical", uploadedOn: "2026-01-15", uploadedBy: "Nurse Immaculate Achen" },
+    ]);
+  },
+  async issueCredential(id: string) {
+    const learner = LEARNERS.find((l) => l.id === id);
+    return mock({ id: `qr-${Date.now()}`, learnerId: id, serial: `QR-${Date.now().toString(36).toUpperCase()}`, status: "active" as const, issuedOn: new Date().toISOString().slice(0, 10), issuedBy: learner?.guardian.name ?? "Front office" }, 500);
+  },
+  async revokeCredential(id: string, reason: string) {
+    return mock({ id, reason, revokedOn: new Date().toISOString(), revokedBy: "Current staff member" }, 500);
+  },
+  async replaceCredential(id: string, reason: string) {
+    return mock({ id, reason, serial: `QR-${Date.now().toString(36).toUpperCase()}`, issuedOn: new Date().toISOString().slice(0, 10) }, 500);
+  },
 };
 
 /* ---------------------------------------------------------- attendance --- */
@@ -257,6 +290,24 @@ export const supportService = {
       interventions: INTERVENTIONS,
     });
   },
+  async casesForLearner(learnerId: string): Promise<ConductCase[]> {
+    return mock(CASES.filter((c) => c.learnerId === learnerId));
+  },
+  async interventionsForLearner(learnerId: string): Promise<Intervention[]> {
+    return mock(INTERVENTIONS.filter((i) => i.learnerId === learnerId));
+  },
+  async healthForLearner(learnerId: string): Promise<HealthEncounter[]> {
+    return mock(HEALTH_ENCOUNTERS.filter((h) => h.learnerId === learnerId));
+  },
+  async absencesForLearner(learnerId: string): Promise<AuthorizedAbsence[]> {
+    return mock(AUTHORIZED_ABSENCES.filter((a) => a.learnerId === learnerId));
+  },
+  async authoriseAbsence(payload: { learnerId: string; reason: string; category: AuthorizedAbsence["category"]; fromDate: string; toDate: string }) {
+    return mock({ ...payload, id: `abs-${Date.now()}`, status: "approved" as const, approvedBy: "Current staff member" }, 500);
+  },
+  async recordFinding(payload: { caseId: string; finding: NonNullable<ConductCase["finding"]>; rationale: string }) {
+    return mock({ ...payload, recordedAt: new Date().toISOString() }, 500);
+  },
 };
 
 /* ----------------------------------------------------------- academics --- */
@@ -268,6 +319,48 @@ export const academicsService = {
   },
   async assessments(): Promise<Assessment[]> {
     return mock(ASSESSMENTS);
+  },
+  async gradeBoundaries(): Promise<GradeBoundary[]> {
+    return mock(GRADE_BOUNDARIES);
+  },
+  async competencies(): Promise<CompetencyRecord[]> {
+    return mock(COMPETENCY_RECORDS);
+  },
+  async marksGrid(assessmentId: string): Promise<MarksGrid> {
+    const assessment = ASSESSMENTS.find((a) => a.id === assessmentId) ?? ASSESSMENTS[0]!;
+    let h = 0;
+    for (const ch of assessment.id) h = (h * 31 + ch.charCodeAt(0)) % 1000;
+    const learners = LEARNERS.filter((l) => l.className === assessment.className).slice(0, 20);
+    return mock({
+      assessmentId: assessment.id,
+      assessmentName: assessment.name,
+      subject: assessment.subject,
+      className: assessment.className,
+      maxMark: 100,
+      cells: learners.map((l, i) => {
+        h = (h * 31 + i) % 1000;
+        const skip = h % 9 === 0;
+        return { learnerId: l.id, learnerName: l.fullName, admissionNumber: l.admissionNumber, mark: skip ? null : 32 + (h % 65) };
+      }),
+    });
+  },
+  async saveMarks(assessmentId: string, cells: { learnerId: string; mark: number | null }[]) {
+    return mock({ assessmentId, saved: true, count: cells.length }, 500);
+  },
+  async subjectAnalysis(): Promise<SubjectAnalysisRow[]> {
+    return mock(SUBJECT_ANALYSIS);
+  },
+  async classAnalysis(): Promise<ClassAnalysisRow[]> {
+    return mock(CLASS_ANALYSIS);
+  },
+  async learnerProgress(): Promise<LearnerProgressRow[]> {
+    return mock(LEARNER_PROGRESS);
+  },
+  async missingWork(): Promise<MissingWorkRow[]> {
+    return mock(MISSING_WORK);
+  },
+  async teacherCompletion(): Promise<TeacherCompletionRow[]> {
+    return mock(TEACHER_COMPLETION);
   },
 };
 
