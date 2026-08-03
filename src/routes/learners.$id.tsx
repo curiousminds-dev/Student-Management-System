@@ -248,7 +248,7 @@ function LearnerProfilePage() {
               ["welfare", "Welfare"], ["health", "Health encounters"], ["participation", "Participation"],
               ["interventions", "Interventions"], ["documents", "Documents"], ["timeline", "Timeline"],
             ].map(([v, l]) => (
-              <TabsTrigger key={v} value={v} className="text-[12px]">{l}</TabsTrigger>
+              <TabsTrigger key={v} value={String(v)} className="text-[12px]">{l}</TabsTrigger>
             ))}
           </TabsList>
 

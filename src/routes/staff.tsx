@@ -369,7 +369,7 @@ function StaffPage() {
             <DialogTitle>Change role</DialogTitle>
             <DialogDescription>Update the role assigned to {roleDialogFor?.name}. This changes their permissions immediately.</DialogDescription>
           </DialogHeader>
-          <Select defaultValue={roleDialogFor?.role}>
+          <Select defaultValue={roleDialogFor?.role ?? "teacher"}>
             <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               {roles.map((r) => <SelectItem key={r.key} value={r.key}>{r.name}</SelectItem>)}
@@ -396,7 +396,7 @@ function StaffPage() {
             <DialogTitle>Assign device</DialogTitle>
             <DialogDescription>Assign a registered device to {deviceDialogFor?.name}.</DialogDescription>
           </DialogHeader>
-          <Select defaultValue={deviceDialogFor?.assignedDeviceId ?? undefined}>
+          <Select defaultValue={deviceDialogFor?.assignedDeviceId ?? ""}>
             <SelectTrigger className="h-8 text-[13px]"><SelectValue placeholder="Choose a device" /></SelectTrigger>
             <SelectContent>
               {(devicesQuery.data ?? []).map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
