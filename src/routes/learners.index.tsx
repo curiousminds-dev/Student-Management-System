@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { learnerService, type LearnerQuery } from "@/services";
 import { useAuth } from "@/lib/auth-context";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import type { Learner } from "@/types";
 
@@ -65,6 +66,7 @@ const DEFAULT_FILTERS: LearnerQuery = {
 function LearnersPage() {
   const { can } = useAuth();
   const identityOnly = !can("learners.view") && can("learners.identity_only");
+  const isWide = useMediaQuery("(min-width: 1280px)");
 
   const [filters, setFilters] = useState<LearnerQuery>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
@@ -353,8 +355,8 @@ function LearnersPage() {
       </div>
 
       {/* Details drawer — tablet and mobile */}
-      <Sheet open={!!selected && panelOpen} onOpenChange={(o) => setPanelOpen(o)}>
-        <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-md xl:hidden">
+      <Sheet open={!isWide && !!selected && panelOpen} onOpenChange={(o) => setPanelOpen(o)}>
+        <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-md">
           <SheetTitle className="sr-only">Learner details</SheetTitle>
           <LearnerPanel learner={selected} identityOnly={identityOnly} onClose={() => setPanelOpen(false)} embedded />
         </SheetContent>

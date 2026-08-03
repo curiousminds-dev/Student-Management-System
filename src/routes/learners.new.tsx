@@ -210,7 +210,7 @@ function LearnerRegistrationPage() {
         name: emergency.name,
         relationship: emergency.relationship,
         phone: emergency.phone,
-      } as never,
+      },
       medicalNotes: consent.medicalNotes || undefined,
     });
   };

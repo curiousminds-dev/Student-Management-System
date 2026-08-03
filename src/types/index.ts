@@ -440,3 +440,84 @@ export interface Paginated<T> {
   page: number;
   pageSize: number;
 }
+
+export type CompetencyLevel = "Exceeding expectation" | "Meeting expectation" | "Approaching expectation" | "Below expectation";
+
+export interface GradeBoundary {
+  id: UUID;
+  grade: string;
+  minMark: number;
+  maxMark: number;
+  points: number;
+  descriptor: string;
+}
+
+export interface CompetencyRecord {
+  id: UUID;
+  learnerId: UUID;
+  learnerName: string;
+  className: string;
+  subject: string;
+  competency: string;
+  level: CompetencyLevel;
+  term: string;
+}
+
+export interface MarkCell {
+  learnerId: UUID;
+  learnerName: string;
+  admissionNumber: string;
+  mark: number | null;
+}
+
+export interface MarksGrid {
+  assessmentId: UUID;
+  assessmentName: string;
+  subject: string;
+  className: string;
+  maxMark: number;
+  cells: MarkCell[];
+}
+
+export interface SubjectAnalysisRow {
+  subject: string;
+  average: number;
+  highest: number;
+  lowest: number;
+  passRate: number;
+}
+
+export interface ClassAnalysisRow {
+  className: string;
+  average: number;
+  passRate: number;
+  ranking: number;
+}
+
+export interface LearnerProgressRow {
+  learnerId: UUID;
+  learnerName: string;
+  className: string;
+  termOne: number;
+  termTwo: number;
+  termThree: number;
+  trend: "up" | "down" | "flat";
+  position: number;
+}
+
+export interface MissingWorkRow {
+  id: UUID;
+  learnerId: UUID;
+  learnerName: string;
+  className: string;
+  subject: string;
+  assessment: string;
+  dueDate: string;
+}
+
+export interface TeacherCompletionRow {
+  teacher: string;
+  subject: string;
+  completion: number;
+  outstandingClasses: string[];
+}
