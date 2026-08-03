@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as CasesRouteImport } from './routes/cases'
+import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as ObservationsRouteImport } from './routes/observations'
 import { Route as OccasionsRouteImport } from './routes/occasions'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as LearnersIndexRouteImport } from './routes/learners.index'
@@ -35,6 +37,11 @@ const CasesRoute = CasesRouteImport.update({
   path: '/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevicesRoute = DevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObservationsRoute = ObservationsRouteImport.update({
   id: '/observations',
   path: '/observations',
@@ -43,6 +50,11 @@ const ObservationsRoute = ObservationsRouteImport.update({
 const OccasionsRoute = OccasionsRouteImport.update({
   id: '/occasions',
   path: '/occasions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScanRoute = ScanRouteImport.update({
@@ -75,8 +87,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
   '/cases': typeof CasesRoute
+  '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
   '/occasions': typeof OccasionsRoute
+  '/reports': typeof ReportsRoute
   '/scan': typeof ScanRoute
   '/staff': typeof StaffRoute
   '/learners/$id': typeof LearnersIdRoute
@@ -87,8 +101,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
   '/cases': typeof CasesRoute
+  '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
   '/occasions': typeof OccasionsRoute
+  '/reports': typeof ReportsRoute
   '/scan': typeof ScanRoute
   '/staff': typeof StaffRoute
   '/learners/$id': typeof LearnersIdRoute
@@ -100,8 +116,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
   '/cases': typeof CasesRoute
+  '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
   '/occasions': typeof OccasionsRoute
+  '/reports': typeof ReportsRoute
   '/scan': typeof ScanRoute
   '/staff': typeof StaffRoute
   '/learners/$id': typeof LearnersIdRoute
@@ -114,8 +132,10 @@ export interface FileRouteTypes {
     | '/'
     | '/attendance'
     | '/cases'
+    | '/devices'
     | '/observations'
     | '/occasions'
+    | '/reports'
     | '/scan'
     | '/staff'
     | '/learners/$id'
@@ -126,8 +146,10 @@ export interface FileRouteTypes {
     | '/'
     | '/attendance'
     | '/cases'
+    | '/devices'
     | '/observations'
     | '/occasions'
+    | '/reports'
     | '/scan'
     | '/staff'
     | '/learners/$id'
@@ -138,8 +160,10 @@ export interface FileRouteTypes {
     | '/'
     | '/attendance'
     | '/cases'
+    | '/devices'
     | '/observations'
     | '/occasions'
+    | '/reports'
     | '/scan'
     | '/staff'
     | '/learners/$id'
@@ -151,8 +175,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttendanceRoute: typeof AttendanceRoute
   CasesRoute: typeof CasesRoute
+  DevicesRoute: typeof DevicesRoute
   ObservationsRoute: typeof ObservationsRoute
   OccasionsRoute: typeof OccasionsRoute
+  ReportsRoute: typeof ReportsRoute
   ScanRoute: typeof ScanRoute
   StaffRoute: typeof StaffRoute
   LearnersIdRoute: typeof LearnersIdRoute
@@ -183,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/devices': {
+      id: '/devices'
+      path: '/devices'
+      fullPath: '/devices'
+      preLoaderRoute: typeof DevicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/observations': {
       id: '/observations'
       path: '/observations'
@@ -195,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/occasions'
       fullPath: '/occasions'
       preLoaderRoute: typeof OccasionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/scan': {
@@ -239,8 +279,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttendanceRoute: AttendanceRoute,
   CasesRoute: CasesRoute,
+  DevicesRoute: DevicesRoute,
   ObservationsRoute: ObservationsRoute,
   OccasionsRoute: OccasionsRoute,
+  ReportsRoute: ReportsRoute,
   ScanRoute: ScanRoute,
   StaffRoute: StaffRoute,
   LearnersIdRoute: LearnersIdRoute,
@@ -250,3 +292,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
