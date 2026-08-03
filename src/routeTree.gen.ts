@@ -10,33 +10,180 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AttendanceRouteImport } from './routes/attendance'
+import { Route as CasesRouteImport } from './routes/cases'
+import { Route as DevicesRouteImport } from './routes/devices'
+import { Route as ObservationsRouteImport } from './routes/observations'
+import { Route as OccasionsRouteImport } from './routes/occasions'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ScanRouteImport } from './routes/scan'
+import { Route as StaffRouteImport } from './routes/staff'
+import { Route as LearnersIndexRouteImport } from './routes/learners.index'
+import { Route as LearnersIdRouteImport } from './routes/learners.$id'
+import { Route as LearnersNewRouteImport } from './routes/learners.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AttendanceRoute = AttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasesRoute = CasesRouteImport.update({
+  id: '/cases',
+  path: '/cases',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevicesRoute = DevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ObservationsRoute = ObservationsRouteImport.update({
+  id: '/observations',
+  path: '/observations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OccasionsRoute = OccasionsRouteImport.update({
+  id: '/occasions',
+  path: '/occasions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnersIndexRoute = LearnersIndexRouteImport.update({
+  id: '/learners/',
+  path: '/learners/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnersIdRoute = LearnersIdRouteImport.update({
+  id: '/learners/$id',
+  path: '/learners/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnersNewRoute = LearnersNewRouteImport.update({
+  id: '/learners/new',
+  path: '/learners/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/attendance': typeof AttendanceRoute
+  '/cases': typeof CasesRoute
+  '/devices': typeof DevicesRoute
+  '/observations': typeof ObservationsRoute
+  '/occasions': typeof OccasionsRoute
+  '/reports': typeof ReportsRoute
+  '/scan': typeof ScanRoute
+  '/staff': typeof StaffRoute
+  '/learners/$id': typeof LearnersIdRoute
+  '/learners/new': typeof LearnersNewRoute
+  '/learners/': typeof LearnersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/attendance': typeof AttendanceRoute
+  '/cases': typeof CasesRoute
+  '/devices': typeof DevicesRoute
+  '/observations': typeof ObservationsRoute
+  '/occasions': typeof OccasionsRoute
+  '/reports': typeof ReportsRoute
+  '/scan': typeof ScanRoute
+  '/staff': typeof StaffRoute
+  '/learners/$id': typeof LearnersIdRoute
+  '/learners/new': typeof LearnersNewRoute
+  '/learners': typeof LearnersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/attendance': typeof AttendanceRoute
+  '/cases': typeof CasesRoute
+  '/devices': typeof DevicesRoute
+  '/observations': typeof ObservationsRoute
+  '/occasions': typeof OccasionsRoute
+  '/reports': typeof ReportsRoute
+  '/scan': typeof ScanRoute
+  '/staff': typeof StaffRoute
+  '/learners/$id': typeof LearnersIdRoute
+  '/learners/new': typeof LearnersNewRoute
+  '/learners/': typeof LearnersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/attendance'
+    | '/cases'
+    | '/devices'
+    | '/observations'
+    | '/occasions'
+    | '/reports'
+    | '/scan'
+    | '/staff'
+    | '/learners/$id'
+    | '/learners/new'
+    | '/learners/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/attendance'
+    | '/cases'
+    | '/devices'
+    | '/observations'
+    | '/occasions'
+    | '/reports'
+    | '/scan'
+    | '/staff'
+    | '/learners/$id'
+    | '/learners/new'
+    | '/learners'
+  id:
+    | '__root__'
+    | '/'
+    | '/attendance'
+    | '/cases'
+    | '/devices'
+    | '/observations'
+    | '/occasions'
+    | '/reports'
+    | '/scan'
+    | '/staff'
+    | '/learners/$id'
+    | '/learners/new'
+    | '/learners/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AttendanceRoute: typeof AttendanceRoute
+  CasesRoute: typeof CasesRoute
+  DevicesRoute: typeof DevicesRoute
+  ObservationsRoute: typeof ObservationsRoute
+  OccasionsRoute: typeof OccasionsRoute
+  ReportsRoute: typeof ReportsRoute
+  ScanRoute: typeof ScanRoute
+  StaffRoute: typeof StaffRoute
+  LearnersIdRoute: typeof LearnersIdRoute
+  LearnersNewRoute: typeof LearnersNewRoute
+  LearnersIndexRoute: typeof LearnersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +195,100 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/attendance': {
+      id: '/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof AttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cases': {
+      id: '/cases'
+      path: '/cases'
+      fullPath: '/cases'
+      preLoaderRoute: typeof CasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devices': {
+      id: '/devices'
+      path: '/devices'
+      fullPath: '/devices'
+      preLoaderRoute: typeof DevicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/observations': {
+      id: '/observations'
+      path: '/observations'
+      fullPath: '/observations'
+      preLoaderRoute: typeof ObservationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/occasions': {
+      id: '/occasions'
+      path: '/occasions'
+      fullPath: '/occasions'
+      preLoaderRoute: typeof OccasionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learners/': {
+      id: '/learners/'
+      path: '/learners'
+      fullPath: '/learners/'
+      preLoaderRoute: typeof LearnersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learners/$id': {
+      id: '/learners/$id'
+      path: '/learners/$id'
+      fullPath: '/learners/$id'
+      preLoaderRoute: typeof LearnersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learners/new': {
+      id: '/learners/new'
+      path: '/learners/new'
+      fullPath: '/learners/new'
+      preLoaderRoute: typeof LearnersNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AttendanceRoute: AttendanceRoute,
+  CasesRoute: CasesRoute,
+  DevicesRoute: DevicesRoute,
+  ObservationsRoute: ObservationsRoute,
+  OccasionsRoute: OccasionsRoute,
+  ReportsRoute: ReportsRoute,
+  ScanRoute: ScanRoute,
+  StaffRoute: StaffRoute,
+  LearnersIdRoute: LearnersIdRoute,
+  LearnersNewRoute: LearnersNewRoute,
+  LearnersIndexRoute: LearnersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
