@@ -28,7 +28,7 @@ import {
   TERMS,
 } from "@/lib/mock/data";
 import { ROLES } from "@/lib/roles";
-import { mock, paginate, request, USE_MOCK_DATA } from "./api-client";
+import { mock, paginate, request, TOKEN_STORAGE_KEY, USE_MOCK_DATA } from "./api-client";
 import type {
   Assessment,
   AttendanceOccasion,
@@ -63,8 +63,20 @@ import type {
 /* ---------------------------------------------------------------- auth --- */
 
 export const authService = {
-  async login(role: RoleKey, name: string, email: string): Promise<User> {
-    if (!USE_MOCK_DATA) return request<User>("/auth/login", { method: "POST", body: JSON.stringify({ email }) });
+  async login(
+    role: RoleKey,
+    name: string,
+    email: string,
+    password = "demo-password",
+  ): Promise<User> {
+    if (!USE_MOCK_DATA) {
+      const result = await request<{ token: string; user: User }>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      window.localStorage.setItem(TOKEN_STORAGE_KEY, result.token);
+      return result.user;
+    }
     const r = ROLES[role];
     const staff = STAFF.find((s) => s.role === role);
     return mock<User>({
@@ -82,6 +94,9 @@ export const authService = {
     if (!USE_MOCK_DATA) return request<User>("/auth/me");
     return mock<User | null>(null, 0);
   },
+  logout() {
+    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  },
 };
 
 /* ----------------------------------------------------------- dashboard --- */
@@ -97,12 +112,54 @@ export const dashboardService = {
       date: "Monday, 3 August 2026",
       term: "Term Two · 2026",
       metrics: [
-        { key: "learners", label: "Active learners", value: LEARNERS.length, change: "+6 this term", trend: "up", tone: "navy" },
-        { key: "present", label: "Present today", value: present, change: "94.2% of expected", trend: "up", tone: "cyan" },
-        { key: "late", label: "Late today", value: late, change: "-4 vs yesterday", trend: "down", tone: "warning" },
-        { key: "unexplained", label: "Unexplained absences", value: unexplained.length, change: "Awaiting reconciliation", trend: "flat", tone: "warning" },
-        { key: "welfare", label: "Open welfare concerns", value: OBSERVATIONS.filter((o) => o.category === "Welfare concern").length, change: "3 under review", trend: "flat", tone: "info" },
-        { key: "devices", label: "Devices awaiting sync", value: DEVICES.filter((d) => d.status !== "synced").length, change: "1 with conflicts", trend: "down", tone: "success" },
+        {
+          key: "learners",
+          label: "Active learners",
+          value: LEARNERS.length,
+          change: "+6 this term",
+          trend: "up",
+          tone: "navy",
+        },
+        {
+          key: "present",
+          label: "Present today",
+          value: present,
+          change: "94.2% of expected",
+          trend: "up",
+          tone: "cyan",
+        },
+        {
+          key: "late",
+          label: "Late today",
+          value: late,
+          change: "-4 vs yesterday",
+          trend: "down",
+          tone: "warning",
+        },
+        {
+          key: "unexplained",
+          label: "Unexplained absences",
+          value: unexplained.length,
+          change: "Awaiting reconciliation",
+          trend: "flat",
+          tone: "warning",
+        },
+        {
+          key: "welfare",
+          label: "Open welfare concerns",
+          value: OBSERVATIONS.filter((o) => o.category === "Welfare concern").length,
+          change: "3 under review",
+          trend: "flat",
+          tone: "info",
+        },
+        {
+          key: "devices",
+          label: "Devices awaiting sync",
+          value: DEVICES.filter((d) => d.status !== "synced").length,
+          change: "1 with conflicts",
+          trend: "down",
+          tone: "success",
+        },
       ],
       attendanceTrend: ATTENDANCE_TREND,
       statusDistribution: [
@@ -114,8 +171,16 @@ export const dashboardService = {
       attendanceByClass: CLASS_RATES,
       caseStatus: [
         { name: "Observations", open: OBSERVATIONS.length, closed: 22 },
-        { name: "Cases", open: CASES.filter((c) => !c.closed).length, closed: CASES.filter((c) => c.closed).length },
-        { name: "Interventions", open: INTERVENTIONS.filter((i) => i.status === "active").length, closed: INTERVENTIONS.filter((i) => i.status === "completed").length },
+        {
+          name: "Cases",
+          open: CASES.filter((c) => !c.closed).length,
+          closed: CASES.filter((c) => c.closed).length,
+        },
+        {
+          name: "Interventions",
+          open: INTERVENTIONS.filter((i) => i.status === "active").length,
+          closed: INTERVENTIONS.filter((i) => i.status === "completed").length,
+        },
       ],
       todaysOccasions: OCCASIONS.slice(0, 6),
       unexplainedAbsences: unexplained.slice(0, 6),
@@ -146,13 +211,22 @@ export const learnerService = {
   async list(query: LearnerQuery = {}): Promise<Paginated<Learner>> {
     if (!USE_MOCK_DATA) return request<Paginated<Learner>>(`/learners`);
     const {
-      search = "", className = "all", stream = "all", residence = "all",
-      gender = "all", status = "all", qrStatus = "all",
-      sortBy = "fullName", sortDir = "asc", page = 1, pageSize = 12,
+      search = "",
+      className = "all",
+      stream = "all",
+      residence = "all",
+      gender = "all",
+      status = "all",
+      qrStatus = "all",
+      sortBy = "fullName",
+      sortDir = "asc",
+      page = 1,
+      pageSize = 12,
     } = query;
     const q = search.trim().toLowerCase();
     let rows = LEARNERS.filter((l) => {
-      if (q && !`${l.fullName} ${l.admissionNumber} ${l.lin}`.toLowerCase().includes(q)) return false;
+      if (q && !`${l.fullName} ${l.admissionNumber} ${l.lin}`.toLowerCase().includes(q))
+        return false;
       if (className !== "all" && l.className !== className) return false;
       if (stream !== "all" && l.stream !== stream) return false;
       if (residence !== "all" && l.residence !== residence) return false;
@@ -164,7 +238,10 @@ export const learnerService = {
     rows = [...rows].sort((a, b) => {
       const av = a[sortBy] as string | number;
       const bv = b[sortBy] as string | number;
-      const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
+      const cmp =
+        typeof av === "number" && typeof bv === "number"
+          ? av - bv
+          : String(av).localeCompare(String(bv));
       return sortDir === "asc" ? cmp : -cmp;
     });
     return mock(paginate(rows, page, pageSize));
@@ -176,15 +253,32 @@ export const learnerService = {
     return mock(learner);
   },
   async create(payload: Partial<Learner>): Promise<Learner> {
-    if (!USE_MOCK_DATA) return request<Learner>("/learners", { method: "POST", body: JSON.stringify(payload) });
+    if (!USE_MOCK_DATA)
+      return request<Learner>("/learners", { method: "POST", body: JSON.stringify(payload) });
     return mock({ ...LEARNERS[0]!, ...payload, id: `lnr-new-${Date.now()}` } as Learner, 600);
   },
   async credentials(id: string) {
     if (!USE_MOCK_DATA) return request(`/learners/${id}/qr-credentials`);
     const learner = LEARNERS.find((l) => l.id === id)!;
     return mock([
-      { id: "qr-1", learnerId: id, serial: learner.qrSerial, status: learner.qrStatus, issuedOn: "2026-02-06", issuedBy: "Grace Nakabugo" },
-      { id: "qr-0", learnerId: id, serial: `QR-OLD-${learner.qrSerial.slice(-4)}`, status: "replaced" as const, issuedOn: "2025-02-11", issuedBy: "Grace Nakabugo", revokedOn: "2026-02-05", revokedReason: "Card reported lost" },
+      {
+        id: "qr-1",
+        learnerId: id,
+        serial: learner.qrSerial,
+        status: learner.qrStatus,
+        issuedOn: "2026-02-06",
+        issuedBy: "Grace Nakabugo",
+      },
+      {
+        id: "qr-0",
+        learnerId: id,
+        serial: `QR-OLD-${learner.qrSerial.slice(-4)}`,
+        status: "replaced" as const,
+        issuedOn: "2025-02-11",
+        issuedBy: "Grace Nakabugo",
+        revokedOn: "2026-02-05",
+        revokedReason: "Card reported lost",
+      },
     ]);
   },
   async observations(id: string) {
@@ -195,36 +289,89 @@ export const learnerService = {
   },
   async documents(id: string) {
     return mock([
-      { id: `doc-${id}-1`, name: "Birth certificate", category: "Identity", uploadedOn: "2026-01-14", uploadedBy: "Grace Nakabugo" },
-      { id: `doc-${id}-2`, name: "Primary Leaving Examination certificate", category: "Academic", uploadedOn: "2026-01-14", uploadedBy: "Grace Nakabugo" },
-      { id: `doc-${id}-3`, name: "Guardian consent form", category: "Consent", uploadedOn: "2026-01-15", uploadedBy: "Grace Nakabugo" },
-      { id: `doc-${id}-4`, name: "Immunisation record", category: "Medical", uploadedOn: "2026-01-15", uploadedBy: "Nurse Immaculate Achen" },
+      {
+        id: `doc-${id}-1`,
+        name: "Birth certificate",
+        category: "Identity",
+        uploadedOn: "2026-01-14",
+        uploadedBy: "Grace Nakabugo",
+      },
+      {
+        id: `doc-${id}-2`,
+        name: "Primary Leaving Examination certificate",
+        category: "Academic",
+        uploadedOn: "2026-01-14",
+        uploadedBy: "Grace Nakabugo",
+      },
+      {
+        id: `doc-${id}-3`,
+        name: "Guardian consent form",
+        category: "Consent",
+        uploadedOn: "2026-01-15",
+        uploadedBy: "Grace Nakabugo",
+      },
+      {
+        id: `doc-${id}-4`,
+        name: "Immunisation record",
+        category: "Medical",
+        uploadedOn: "2026-01-15",
+        uploadedBy: "Nurse Immaculate Achen",
+      },
     ]);
   },
   async issueCredential(id: string) {
     const learner = LEARNERS.find((l) => l.id === id);
-    return mock({ id: `qr-${Date.now()}`, learnerId: id, serial: `QR-${Date.now().toString(36).toUpperCase()}`, status: "active" as const, issuedOn: new Date().toISOString().slice(0, 10), issuedBy: learner?.guardian.name ?? "Front office" }, 500);
+    return mock(
+      {
+        id: `qr-${Date.now()}`,
+        learnerId: id,
+        serial: `QR-${Date.now().toString(36).toUpperCase()}`,
+        status: "active" as const,
+        issuedOn: new Date().toISOString().slice(0, 10),
+        issuedBy: learner?.guardian.name ?? "Front office",
+      },
+      500,
+    );
   },
   async revokeCredential(id: string, reason: string) {
-    return mock({ id, reason, revokedOn: new Date().toISOString(), revokedBy: "Current staff member" }, 500);
+    return mock(
+      { id, reason, revokedOn: new Date().toISOString(), revokedBy: "Current staff member" },
+      500,
+    );
   },
   async replaceCredential(id: string, reason: string) {
-    return mock({ id, reason, serial: `QR-${Date.now().toString(36).toUpperCase()}`, issuedOn: new Date().toISOString().slice(0, 10) }, 500);
+    return mock(
+      {
+        id,
+        reason,
+        serial: `QR-${Date.now().toString(36).toUpperCase()}`,
+        issuedOn: new Date().toISOString().slice(0, 10),
+      },
+      500,
+    );
   },
 };
 
 /* ---------------------------------------------------------- attendance --- */
 
 export const attendanceService = {
-  async records(filters: { search?: string; className?: string; status?: string; occasionId?: string } = {}): Promise<AttendanceRecord[]> {
+  async records(
+    filters: { search?: string; className?: string; status?: string; occasionId?: string } = {},
+  ): Promise<AttendanceRecord[]> {
     if (!USE_MOCK_DATA) return request<AttendanceRecord[]>("/attendance");
     const q = (filters.search ?? "").toLowerCase();
     return mock(
       ATTENDANCE_RECORDS.filter((r) => {
         if (q && !`${r.learnerName} ${r.admissionNumber}`.toLowerCase().includes(q)) return false;
-        if (filters.className && filters.className !== "all" && r.className !== filters.className) return false;
+        if (filters.className && filters.className !== "all" && r.className !== filters.className)
+          return false;
         if (filters.status && filters.status !== "all" && r.status !== filters.status) return false;
-        if (filters.occasionId && filters.occasionId !== "all" && r.occasionId !== filters.occasionId) return false;
+        if (
+          filters.occasionId &&
+          filters.occasionId !== "all" &&
+          r.occasionId !== filters.occasionId
+        )
+          return false;
         return true;
       }),
     );
@@ -236,6 +383,32 @@ export const attendanceService = {
   async scans(): Promise<ScanEvent[]> {
     if (!USE_MOCK_DATA) return request<ScanEvent[]>("/attendance/scans");
     return mock(SCANS);
+  },
+  async scan(payload: {
+    credential: string;
+    occasionId: string;
+    deviceId?: string;
+    clientEventId?: string;
+    recordedAt?: string;
+  }) {
+    return request<{
+      outcome: string;
+      accepted: boolean;
+      learner?: Learner;
+      record?: AttendanceRecord;
+    }>("/attendance/scan", { method: "POST", body: JSON.stringify(payload) });
+  },
+  async sync(payload: {
+    clientBatchId: string;
+    events: Array<{
+      credential: string;
+      occasionId: string;
+      deviceId: string;
+      clientEventId: string;
+      recordedAt: string;
+    }>;
+  }) {
+    return request("/attendance/sync", { method: "POST", body: JSON.stringify(payload) });
   },
   async authorizedAbsences(): Promise<AuthorizedAbsence[]> {
     return mock(AUTHORIZED_ABSENCES);
@@ -302,10 +475,28 @@ export const supportService = {
   async absencesForLearner(learnerId: string): Promise<AuthorizedAbsence[]> {
     return mock(AUTHORIZED_ABSENCES.filter((a) => a.learnerId === learnerId));
   },
-  async authoriseAbsence(payload: { learnerId: string; reason: string; category: AuthorizedAbsence["category"]; fromDate: string; toDate: string }) {
-    return mock({ ...payload, id: `abs-${Date.now()}`, status: "approved" as const, approvedBy: "Current staff member" }, 500);
+  async authoriseAbsence(payload: {
+    learnerId: string;
+    reason: string;
+    category: AuthorizedAbsence["category"];
+    fromDate: string;
+    toDate: string;
+  }) {
+    return mock(
+      {
+        ...payload,
+        id: `abs-${Date.now()}`,
+        status: "approved" as const,
+        approvedBy: "Current staff member",
+      },
+      500,
+    );
   },
-  async recordFinding(payload: { caseId: string; finding: NonNullable<ConductCase["finding"]>; rationale: string }) {
+  async recordFinding(payload: {
+    caseId: string;
+    finding: NonNullable<ConductCase["finding"]>;
+    rationale: string;
+  }) {
     return mock({ ...payload, recordedAt: new Date().toISOString() }, 500);
   },
 };
@@ -340,7 +531,12 @@ export const academicsService = {
       cells: learners.map((l, i) => {
         h = (h * 31 + i) % 1000;
         const skip = h % 9 === 0;
-        return { learnerId: l.id, learnerName: l.fullName, admissionNumber: l.admissionNumber, mark: skip ? null : 32 + (h % 65) };
+        return {
+          learnerId: l.id,
+          learnerName: l.fullName,
+          admissionNumber: l.admissionNumber,
+          mark: skip ? null : 32 + (h % 65),
+        };
       }),
     });
   },
@@ -385,6 +581,16 @@ export const communicationService = {
     return mock(MESSAGES);
   },
   async send(payload: { template: string; audience: string; body: string }) {
+    if (!USE_MOCK_DATA)
+      return request("/communications", {
+        method: "POST",
+        body: JSON.stringify({
+          channel: "sms",
+          recipients: [payload.audience],
+          subject: payload.template,
+          body: payload.body,
+        }),
+      });
     return mock({ ...payload, id: `msg-${Date.now()}` }, 700);
   },
 };
@@ -408,6 +614,8 @@ export const settingsService = {
 
 export const reportService = {
   async generate(reportId: string) {
+    if (!USE_MOCK_DATA)
+      return request(`/reports/attendance-summary?reportId=${encodeURIComponent(reportId)}`);
     return mock({ reportId, url: "#", generatedAt: new Date().toISOString() }, 900);
   },
 };

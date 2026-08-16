@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { PermissionKey, RoleKey, User } from "@/types";
 import { authService } from "@/services";
 import { DEMO_ACCOUNTS } from "@/lib/roles";
@@ -43,12 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    authService.logout();
     window.localStorage.removeItem(STORAGE_KEY);
     setUser(null);
   }, []);
 
   const can = useCallback(
-    (permission: PermissionKey) => !!user && user.permissions.includes(permission),
+    (permission: PermissionKey) =>
+      !!user &&
+      (user.permissions.includes(permission) || (user.permissions as string[]).includes("*")),
     [user],
   );
 

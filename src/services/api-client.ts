@@ -4,6 +4,7 @@
  */
 export const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "";
 export const USE_MOCK_DATA = (import.meta.env["VITE_USE_MOCK_DATA"] ?? "true") !== "false";
+export const TOKEN_STORAGE_KEY = "ncs.access_token";
 
 export class ApiError extends Error {
   status: number;
@@ -23,11 +24,22 @@ export function mock<T>(value: T | (() => T), delay = LATENCY): Promise<T> {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token =
+    typeof window === "undefined" ? null : window.localStorage.getItem(TOKEN_STORAGE_KEY);
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
     ...init,
   });
-  if (!response.ok) throw new ApiError(`Request to ${path} failed`, response.status);
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    if (response.status === 401 && typeof window !== "undefined")
+      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    throw new ApiError(payload?.error ?? `Request to ${path} failed`, response.status);
+  }
   return (await response.json()) as T;
 }
 
