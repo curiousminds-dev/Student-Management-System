@@ -483,10 +483,53 @@ export const deviceService = {
 
 /* --------------------------------------------------- support & welfare --- */
 
+interface WelfareObservationApi {
+  id: string;
+  learnerId: string;
+  learner: { firstName: string; lastName: string; className: string; stream: string };
+  reporter: { name: string };
+  category: Observation["category"];
+  severity: Observation["severity"];
+  summary: string;
+  details: string;
+  status: "open" | "reviewing" | "closed";
+  occurredAt: string;
+  reviewAt?: string;
+}
+
 export const supportService = {
   async observations(): Promise<Observation[]> {
-    if (!USE_MOCK_DATA) return request<Observation[]>("/welfare/observations");
+    if (!USE_MOCK_DATA) {
+      const rows = await request<WelfareObservationApi[]>("/welfare/observations");
+      return rows.map((row) => ({
+        id: row.id,
+        reference: `WEL-${row.id.slice(-6).toUpperCase()}`,
+        learnerId: row.learnerId,
+        learnerName: `${row.learner.firstName} ${row.learner.lastName}`,
+        className: `${row.learner.className} ${row.learner.stream}`,
+        category: row.category,
+        severity: row.severity,
+        dateTime: row.occurredAt,
+        location: "School campus",
+        relatedOccasion: null,
+        description: row.details,
+        immediateAction: row.summary,
+        recommendedFollowUp: row.reviewAt ? `Review on ${row.reviewAt}` : "Monitor and review",
+        witnesses: [],
+        parentContactRecommended: row.severity === "high",
+        recordedBy: row.reporter.name,
+        confidential: row.category === "Welfare concern",
+        status: row.status,
+        reviewAt: row.reviewAt,
+      })) as Observation[];
+    }
     return mock(OBSERVATIONS);
+  },
+  async updateObservation(id: string, status: "open" | "reviewing" | "closed") {
+    return request(`/welfare/observations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
   },
   async createObservation(payload: Partial<Observation>) {
     if (!USE_MOCK_DATA)
@@ -496,9 +539,10 @@ export const supportService = {
           learnerId: payload.learnerId,
           category: payload.category,
           severity: payload.severity,
-          summary: payload.description ?? payload.category,
+          summary: payload.immediateAction ?? payload.description ?? payload.category,
           details: payload.description ?? "Observation recorded",
           occurredAt: payload.dateTime ?? new Date().toISOString(),
+          reviewAt: (payload as Partial<Observation> & { reviewAt?: string }).reviewAt,
         }),
       });
     return mock({ ...OBSERVATIONS[0]!, ...payload, id: `obs-${Date.now()}` }, 600);
@@ -578,14 +622,53 @@ export const supportService = {
 
 /* ----------------------------------------------------------- academics --- */
 
+interface AssessmentApi {
+  id: string;
+  name: string;
+  subject: string;
+  className: string;
+  term: string;
+  maximumMark: number;
+  assessmentDate: string;
+  publishedAt?: string;
+  _count?: { marks: number };
+}
+
 export const academicsService = {
   async subjects(): Promise<Subject[]> {
     if (!USE_MOCK_DATA) return request<Subject[]>("/academics");
     return mock(SUBJECTS);
   },
   async assessments(): Promise<Assessment[]> {
-    if (!USE_MOCK_DATA) return request<Assessment[]>("/academics/assessments");
+    if (!USE_MOCK_DATA) {
+      const rows = await request<AssessmentApi[]>("/academics/assessments");
+      return rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        subject: row.subject,
+        className: row.className,
+        term: row.term,
+        dueDate: row.assessmentDate,
+        entered: row._count?.marks ?? 0,
+        expected: row._count?.marks ?? 0,
+        status: row.publishedAt ? "published" : row._count?.marks ? "marks_entry" : "open",
+        maximumMark: row.maximumMark,
+      })) as Assessment[];
+    }
     return mock(ASSESSMENTS);
+  },
+  async createAssessment(payload: {
+    name: string;
+    subject: string;
+    className: string;
+    term: string;
+    maximumMark: number;
+    assessmentDate: string;
+  }) {
+    return request("/academics/assessments", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
   async gradeBoundaries(): Promise<GradeBoundary[]> {
     return mock(GRADE_BOUNDARIES);
@@ -594,6 +677,7 @@ export const academicsService = {
     return mock(COMPETENCY_RECORDS);
   },
   async marksGrid(assessmentId: string): Promise<MarksGrid> {
+    if (!USE_MOCK_DATA) return request<MarksGrid>(`/academics/assessments/${assessmentId}/marks`);
     const assessment = ASSESSMENTS.find((a) => a.id === assessmentId) ?? ASSESSMENTS[0]!;
     let h = 0;
     for (const ch of assessment.id) h = (h * 31 + ch.charCodeAt(0)) % 1000;
@@ -615,6 +699,9 @@ export const academicsService = {
         };
       }),
     });
+  },
+  async publish(assessmentId: string) {
+    return request(`/academics/assessments/${assessmentId}/publish`, { method: "POST" });
   },
   async saveMarks(assessmentId: string, cells: { learnerId: string; mark: number | null }[]) {
     if (!USE_MOCK_DATA)

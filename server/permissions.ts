@@ -9,6 +9,11 @@ export const ROLE_PERMISSIONS = {
     "reports.view",
     "communication.view",
     "audit.view",
+    "observations.view",
+    "welfare.view",
+    "welfare.manage",
+    "academics.view",
+    "academics.manage",
   ],
   director_of_studies: [
     "dashboard.view",
@@ -19,6 +24,10 @@ export const ROLE_PERMISSIONS = {
     "occasions.manage",
     "reports.view",
     "communication.view",
+    "observations.view",
+    "observations.create",
+    "academics.view",
+    "academics.manage",
   ],
   teacher: [
     "dashboard.view",
@@ -27,6 +36,8 @@ export const ROLE_PERMISSIONS = {
     "attendance.record",
     "observations.view",
     "observations.create",
+    "academics.view",
+    "academics.manage",
   ],
   security_officer: [
     "learners.identity_only",
