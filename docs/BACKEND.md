@@ -1,10 +1,10 @@
 # Backend foundation
 
-The REST API lives in `server/` and is exposed below `/api/v1`. It uses Fastify, Prisma and SQLite locally; the schema is relational and can be migrated to PostgreSQL by changing the Prisma datasource provider and connection URL.
+The REST API lives in `server/` and is exposed below `/api/v1`. It uses Fastify, Prisma and PostgreSQL in every environment so development and CI exercise the same database semantics used in production.
 
 ## Local setup
 
-1. Copy `.env.example` to `.env` and set a strong `JWT_SECRET`.
+1. Start PostgreSQL, copy `.env.example` to `.env`, and set strong `JWT_SECRET` and `MFA_ENCRYPTION_KEY` values.
 2. Run `npm install`, `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`.
 3. Start the API with `npm run api:dev` and the UI with `npm run dev`.
 
@@ -12,7 +12,7 @@ All seeded accounts use `demo-password`. The seed QR value is `NCS-DEMO-AMINA-00
 
 ## Security and data guarantees
 
-- Short-lived signed bearer tokens identify the user, school, campus and role.
+- Ten-minute signed access tokens are held in memory; rotating refresh tokens use HTTP-only cookies and a revocable server-side session registry.
 - Every protected endpoint checks a server-side permission. UI permission checks are only for presentation.
 - School scoping is applied to reads and mutations to prevent cross-school access.
 - Attendance has uniqueness constraints for learner/occasion and offline event IDs.

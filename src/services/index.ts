@@ -28,7 +28,7 @@ import {
   TERMS,
 } from "@/lib/mock/data";
 import { ROLES } from "@/lib/roles";
-import { mock, paginate, request, TOKEN_STORAGE_KEY, USE_MOCK_DATA } from "./api-client";
+import { mock, paginate, request, setAccessToken, USE_MOCK_DATA } from "./api-client";
 import type {
   Assessment,
   AttendanceOccasion,
@@ -61,6 +61,11 @@ import type {
 } from "@/types";
 
 /* ---------------------------------------------------------------- auth --- */
+export class MfaRequiredError extends Error {
+  constructor(public challengeToken: string) {
+    super("MFA verification required");
+  }
+}
 
 export const authService = {
   async login(
@@ -70,11 +75,19 @@ export const authService = {
     password = "demo-password",
   ): Promise<User> {
     if (!USE_MOCK_DATA) {
-      const result = await request<{ token: string; user: User }>("/auth/login", {
+      const result = await request<{
+        token?: string;
+        user?: User;
+        mfaRequired?: boolean;
+        challengeToken?: string;
+      }>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      window.localStorage.setItem(TOKEN_STORAGE_KEY, result.token);
+      if (result.mfaRequired && result.challengeToken)
+        throw new MfaRequiredError(result.challengeToken);
+      if (!result.token || !result.user) throw new Error("Invalid authentication response");
+      setAccessToken(result.token);
       return result.user;
     }
     const r = ROLES[role];
@@ -90,12 +103,29 @@ export const authService = {
       permissions: r.permissions,
     });
   },
+  async verifyMfa(challengeToken: string, code: string) {
+    const result = await request<{ token: string; user: User }>("/auth/mfa/verify", {
+      method: "POST",
+      body: JSON.stringify({ challengeToken, code }),
+    });
+    setAccessToken(result.token);
+    return result.user;
+  },
   async me(): Promise<User | null> {
-    if (!USE_MOCK_DATA) return request<User>("/auth/me");
+    if (!USE_MOCK_DATA) {
+      try {
+        const refreshed = await request<{ token: string }>("/auth/refresh", { method: "POST" });
+        setAccessToken(refreshed.token);
+        return request<User>("/auth/me");
+      } catch {
+        return null;
+      }
+    }
     return mock<User | null>(null, 0);
   },
   logout() {
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    if (!USE_MOCK_DATA) void request("/auth/logout", { method: "POST" }).catch(() => undefined);
+    setAccessToken(null);
   },
 };
 
@@ -396,7 +426,11 @@ export const attendanceService = {
       accepted: boolean;
       learner?: Learner;
       record?: AttendanceRecord;
-    }>("/attendance/scan", { method: "POST", body: JSON.stringify(payload) });
+    }>("/attendance/scan", {
+      method: "POST",
+      headers: deviceService.authHeaders(),
+      body: JSON.stringify(payload),
+    });
   },
   async sync(payload: {
     clientBatchId: string;
@@ -408,7 +442,11 @@ export const attendanceService = {
       recordedAt: string;
     }>;
   }) {
-    return request("/attendance/sync", { method: "POST", body: JSON.stringify(payload) });
+    return request("/attendance/sync", {
+      method: "POST",
+      headers: deviceService.authHeaders(),
+      body: JSON.stringify(payload),
+    });
   },
   async authorizedAbsences(): Promise<AuthorizedAbsence[]> {
     return mock(AUTHORIZED_ABSENCES);
@@ -418,6 +456,18 @@ export const attendanceService = {
 /* ------------------------------------------------------------- devices --- */
 
 export const deviceService = {
+  token: null as string | null,
+  authHeaders() {
+    return this.token ? { "X-Device-Token": this.token } : {};
+  },
+  async authenticate(publicId: string, secret: string) {
+    const result = await request<{ token: string; deviceId: string }>("/devices/auth", {
+      method: "POST",
+      body: JSON.stringify({ publicId, secret }),
+    });
+    this.token = result.token;
+    return result;
+  },
   async list(): Promise<Device[]> {
     if (!USE_MOCK_DATA) return request<Device[]>("/devices");
     return mock(DEVICES);
@@ -435,14 +485,26 @@ export const deviceService = {
 
 export const supportService = {
   async observations(): Promise<Observation[]> {
-    if (!USE_MOCK_DATA) return request<Observation[]>("/observations");
+    if (!USE_MOCK_DATA) return request<Observation[]>("/welfare/observations");
     return mock(OBSERVATIONS);
   },
   async createObservation(payload: Partial<Observation>) {
+    if (!USE_MOCK_DATA)
+      return request("/welfare/observations", {
+        method: "POST",
+        body: JSON.stringify({
+          learnerId: payload.learnerId,
+          category: payload.category,
+          severity: payload.severity,
+          summary: payload.description ?? payload.category,
+          details: payload.description ?? "Observation recorded",
+          occurredAt: payload.dateTime ?? new Date().toISOString(),
+        }),
+      });
     return mock({ ...OBSERVATIONS[0]!, ...payload, id: `obs-${Date.now()}` }, 600);
   },
   async cases(): Promise<ConductCase[]> {
-    if (!USE_MOCK_DATA) return request<ConductCase[]>("/cases");
+    if (!USE_MOCK_DATA) return request<ConductCase[]>("/conduct/cases");
     return mock(CASES);
   },
   async interventions(): Promise<Intervention[]> {
@@ -497,6 +559,19 @@ export const supportService = {
     finding: NonNullable<ConductCase["finding"]>;
     rationale: string;
   }) {
+    if (!USE_MOCK_DATA)
+      return request(`/conduct/cases/${payload.caseId}/decision`, {
+        method: "POST",
+        body: JSON.stringify({
+          finding:
+            payload.finding === "Confirmed"
+              ? "substantiated"
+              : payload.finding === "Dismissed"
+                ? "not_substantiated"
+                : "inconclusive",
+          rationale: payload.rationale,
+        }),
+      });
     return mock({ ...payload, recordedAt: new Date().toISOString() }, 500);
   },
 };
@@ -509,6 +584,7 @@ export const academicsService = {
     return mock(SUBJECTS);
   },
   async assessments(): Promise<Assessment[]> {
+    if (!USE_MOCK_DATA) return request<Assessment[]>("/academics/assessments");
     return mock(ASSESSMENTS);
   },
   async gradeBoundaries(): Promise<GradeBoundary[]> {
@@ -541,6 +617,13 @@ export const academicsService = {
     });
   },
   async saveMarks(assessmentId: string, cells: { learnerId: string; mark: number | null }[]) {
+    if (!USE_MOCK_DATA)
+      return request(`/academics/assessments/${assessmentId}/marks`, {
+        method: "PUT",
+        body: JSON.stringify(
+          cells.map((cell) => ({ learnerId: cell.learnerId, score: cell.mark })),
+        ),
+      });
     return mock({ assessmentId, saved: true, count: cells.length }, 500);
   },
   async subjectAnalysis(): Promise<SubjectAnalysisRow[]> {
@@ -597,7 +680,32 @@ export const communicationService = {
 
 export const auditService = {
   async list(): Promise<AuditEvent[]> {
-    if (!USE_MOCK_DATA) return request<AuditEvent[]>("/audit-logs");
+    if (!USE_MOCK_DATA) {
+      const rows = await request<
+        Array<{
+          id: string;
+          createdAt: string;
+          actor?: { name?: string };
+          action: string;
+          entityType: string;
+          entityId?: string;
+          ipAddress?: string;
+        }>
+      >("/audit-logs");
+      return rows.map((row) => ({
+        id: row.id,
+        at: row.createdAt,
+        user: row.actor?.name ?? "System",
+        role: "",
+        action: row.action,
+        module: row.entityType,
+        record: row.entityId ?? "",
+        device: "",
+        ip: row.ipAddress ?? "",
+        reason: null,
+        result: "success",
+      }));
+    }
     return mock(AUDIT_EVENTS);
   },
 };
@@ -608,6 +716,11 @@ export const settingsService = {
     return mock({ school: SCHOOL, terms: TERMS });
   },
   async save(section: string) {
+    if (!USE_MOCK_DATA)
+      return request(`/settings/${encodeURIComponent(section)}`, {
+        method: "PUT",
+        body: JSON.stringify({ value: { updatedAt: new Date().toISOString() } }),
+      });
     return mock({ section, saved: true }, 700);
   },
 };

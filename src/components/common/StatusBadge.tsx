@@ -1,6 +1,16 @@
 import { cn } from "@/lib/utils";
 
-export type BadgeTone = "present" | "late" | "excused" | "unexplained" | "pending" | "neutral" | "info" | "danger" | "success" | "warning";
+export type BadgeTone =
+  | "present"
+  | "late"
+  | "excused"
+  | "unexplained"
+  | "pending"
+  | "neutral"
+  | "info"
+  | "danger"
+  | "success"
+  | "warning";
 
 const TONES: Record<BadgeTone, string> = {
   present: "bg-success-soft text-success",
@@ -47,7 +57,16 @@ export function StatusBadge({
 }) {
   const resolved: BadgeTone =
     tone ??
-    (["present", "active", "synced", "approved", "reconciled", "sent", "success", "closed"].includes(status)
+    ([
+      "present",
+      "active",
+      "synced",
+      "approved",
+      "reconciled",
+      "sent",
+      "success",
+      "closed",
+    ].includes(status)
       ? "present"
       : ["late", "pending", "syncing", "queued", "paused", "marks_entry"].includes(status)
         ? "late"

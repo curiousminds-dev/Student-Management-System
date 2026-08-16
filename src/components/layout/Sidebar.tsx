@@ -25,13 +25,17 @@ export function Sidebar({
         collapsed ? "w-[72px]" : "w-[240px]",
       )}
     >
-      <div className={cn("flex items-center gap-2.5 px-4 py-4", collapsed && "justify-center px-0")}>
+      <div
+        className={cn("flex items-center gap-2.5 px-4 py-4", collapsed && "justify-center px-0")}
+      >
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
           <GraduationCap className="h-5 w-5" />
         </span>
         {!collapsed ? (
           <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold text-white">Nile Crest Secondary School</p>
+            <p className="truncate text-[13px] font-semibold text-white">
+              Nile Crest Secondary School
+            </p>
             <p className="truncate text-[11px] text-sidebar-foreground/60">Kampala Campus</p>
           </div>
         ) : null}

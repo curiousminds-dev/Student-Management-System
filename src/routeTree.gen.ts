@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AttendanceRouteImport } from './routes/attendance'
+import { Route as AuditRouteImport } from './routes/audit'
 import { Route as CasesRouteImport } from './routes/cases'
 import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as ObservationsRouteImport } from './routes/observations'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const AttendanceRoute = AttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CasesRoute = CasesRouteImport.update({
@@ -86,6 +92,7 @@ const LearnersNewRoute = LearnersNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/audit': typeof AuditRoute
   '/cases': typeof CasesRoute
   '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/audit': typeof AuditRoute
   '/cases': typeof CasesRoute
   '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/audit': typeof AuditRoute
   '/cases': typeof CasesRoute
   '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/attendance'
+    | '/audit'
     | '/cases'
     | '/devices'
     | '/observations'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/attendance'
+    | '/audit'
     | '/cases'
     | '/devices'
     | '/observations'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/attendance'
+    | '/audit'
     | '/cases'
     | '/devices'
     | '/observations'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttendanceRoute: typeof AttendanceRoute
+  AuditRoute: typeof AuditRoute
   CasesRoute: typeof CasesRoute
   DevicesRoute: typeof DevicesRoute
   ObservationsRoute: typeof ObservationsRoute
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/attendance'
       fullPath: '/attendance'
       preLoaderRoute: typeof AttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cases': {
@@ -278,6 +298,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttendanceRoute: AttendanceRoute,
+  AuditRoute: AuditRoute,
   CasesRoute: CasesRoute,
   DevicesRoute: DevicesRoute,
   ObservationsRoute: ObservationsRoute,

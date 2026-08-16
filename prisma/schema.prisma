@@ -3,18 +3,22 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model School {
-  id        String    @id @default(cuid())
-  name      String
-  createdAt DateTime  @default(now())
-  campuses  Campus[]
-  users     User[]
-  learners  Learner[]
-  devices   Device[]
+  id           String               @id @default(cuid())
+  name         String
+  createdAt    DateTime             @default(now())
+  campuses     Campus[]
+  users        User[]
+  learners     Learner[]
+  devices      Device[]
+  settings     SchoolSetting[]
+  observations WelfareObservation[]
+  cases        ConductCase[]
+  assessments  Assessment[]
 }
 
 model Campus {
@@ -31,25 +35,35 @@ model Campus {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  schoolId     String
-  campusId     String?
-  name         String
-  email        String       @unique
-  passwordHash String
-  role         String
-  active       Boolean      @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus       Campus?      @relation(fields: [campusId], references: [id])
-  auditEvents  AuditEvent[]
-  messages     Message[]
+  id                  String               @id @default(cuid())
+  schoolId            String
+  campusId            String?
+  name                String
+  email               String               @unique
+  passwordHash        String
+  role                String
+  active              Boolean              @default(true)
+  failedLoginAttempts Int                  @default(0)
+  lockedUntil         DateTime?
+  passwordChangedAt   DateTime             @default(now())
+  mfaEnabled          Boolean              @default(false)
+  mfaSecretEncrypted  String?
+  lastLoginAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  school              School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus              Campus?              @relation(fields: [campusId], references: [id])
+  auditEvents         AuditEvent[]
+  messages            Message[]
+  sessions            Session[]
+  resetTokens         PasswordResetToken[]
+  observations        WelfareObservation[] @relation("ObservationReporter")
+  cases               ConductCase[]        @relation("CaseOwner")
+  assessments         Assessment[]         @relation("AssessmentCreator")
 }
 
 model Learner {
-  id              String             @id @default(cuid())
+  id              String               @id @default(cuid())
   schoolId        String
   campusId        String
   firstName       String
@@ -63,14 +77,17 @@ model Learner {
   dateOfBirth     DateTime
   guardianName    String
   guardianPhone   String
-  status          String             @default("active")
-  enrolledOn      DateTime           @default(now())
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  school          School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus          Campus             @relation(fields: [campusId], references: [id])
+  status          String               @default("active")
+  enrolledOn      DateTime             @default(now())
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  school          School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus          Campus               @relation(fields: [campusId], references: [id])
   credentials     QrCredential[]
   attendance      AttendanceRecord[]
+  observations    WelfareObservation[]
+  cases           ConductCase[]
+  marks           Mark[]
 
   @@unique([schoolId, admissionNumber])
   @@index([schoolId, className, stream])
@@ -111,18 +128,62 @@ model AttendanceOccasion {
 }
 
 model Device {
-  id          String             @id @default(cuid())
-  schoolId    String
-  name        String
-  publicId    String             @unique
-  secretHash  String
-  location    String
-  status      String             @default("active")
-  lastSyncAt  DateTime?
-  createdAt   DateTime           @default(now())
-  school      School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  records     AttendanceRecord[]
-  syncBatches SyncBatch[]
+  id              String             @id @default(cuid())
+  schoolId        String
+  name            String
+  publicId        String             @unique
+  secretHash      String
+  secretVersion   Int                @default(1)
+  secretRotatedAt DateTime           @default(now())
+  location        String
+  status          String             @default("active")
+  lastSyncAt      DateTime?
+  createdAt       DateTime           @default(now())
+  school          School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  records         AttendanceRecord[]
+  syncBatches     SyncBatch[]
+  sessions        DeviceSession[]
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  userId           String
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  lastUsedAt       DateTime  @default(now())
+  revokedAt        DateTime?
+  revokedReason    String?
+  createdAt        DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model DeviceSession {
+  id        String    @id @default(cuid())
+  deviceId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  device    Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, revokedAt])
 }
 
 model AttendanceRecord {
@@ -195,4 +256,94 @@ model AuditEvent {
 
   @@index([schoolId, createdAt])
   @@index([entityType, entityId])
+}
+
+model WelfareObservation {
+  id         String    @id @default(cuid())
+  schoolId   String
+  learnerId  String
+  reporterId String
+  category   String
+  severity   String
+  summary    String
+  details    String
+  status     String    @default("open")
+  occurredAt DateTime
+  reviewAt   DateTime?
+  closedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  school     School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  learner    Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  reporter   User      @relation("ObservationReporter", fields: [reporterId], references: [id])
+
+  @@index([schoolId, status, occurredAt])
+  @@index([learnerId, occurredAt])
+}
+
+model ConductCase {
+  id         String    @id @default(cuid())
+  schoolId   String
+  learnerId  String
+  ownerId    String
+  reference  String
+  title      String
+  allegation String
+  status     String    @default("open")
+  finding    String?
+  rationale  String?
+  closedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  school     School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  learner    Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  owner      User      @relation("CaseOwner", fields: [ownerId], references: [id])
+
+  @@unique([schoolId, reference])
+  @@index([schoolId, status])
+}
+
+model Assessment {
+  id             String    @id @default(cuid())
+  schoolId       String
+  createdById    String
+  name           String
+  subject        String
+  className      String
+  term           String
+  maximumMark    Int
+  assessmentDate DateTime
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  school         School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdBy      User      @relation("AssessmentCreator", fields: [createdById], references: [id])
+  marks          Mark[]
+
+  @@index([schoolId, className, term])
+}
+
+model Mark {
+  id           String     @id @default(cuid())
+  assessmentId String
+  learnerId    String
+  score        Decimal?   @db.Decimal(6, 2)
+  comment      String?
+  updatedAt    DateTime   @updatedAt
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  learner      Learner    @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, learnerId])
+}
+
+model SchoolSetting {
+  id        String   @id @default(cuid())
+  schoolId  String
+  key       String
+  valueJson Json
+  sensitive Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, key])
 }

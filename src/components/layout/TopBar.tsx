@@ -1,11 +1,30 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, HelpCircle, KeyRound, LogOut, Menu, RefreshCw, Search, UserRound } from "lucide-react";
+import {
+  Bell,
+  HelpCircle,
+  KeyRound,
+  LogOut,
+  Menu,
+  RefreshCw,
+  Search,
+  UserRound,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-  DropdownMenuSeparator, DropdownMenuTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/auth-context";
@@ -17,13 +36,20 @@ export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   const { user, logout } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const current =
-    NAVIGATION.flatMap((s) => s.items).find((i) => (i.to === "/" ? pathname === "/" : pathname.startsWith(i.to))) ??
-    NAVIGATION[0]!.items[0]!;
+    NAVIGATION.flatMap((s) => s.items).find((i) =>
+      i.to === "/" ? pathname === "/" : pathname.startsWith(i.to),
+    ) ?? NAVIGATION[0]!.items[0]!;
   const section = NAVIGATION.find((s) => s.items.some((i) => i.to === current.to));
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card px-3 sm:px-4">
-      <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open navigation" onClick={onOpenNav}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden"
+        aria-label="Open navigation"
+        onClick={onOpenNav}
+      >
         <Menu className="h-5 w-5" />
       </Button>
 
@@ -90,7 +116,11 @@ export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
           size="icon"
           className="relative h-8 w-8"
           aria-label="Notifications"
-          onClick={() => toast("4 unread notifications", { description: "18 unexplained absences need reconciliation." })}
+          onClick={() =>
+            toast("4 unread notifications", {
+              description: "18 unexplained absences need reconciliation.",
+            })
+          }
         >
           <Bell className="h-4 w-4" />
           <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-cyan" />
@@ -98,27 +128,46 @@ export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted" aria-label="Account menu">
+            <button
+              className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted"
+              aria-label="Account menu"
+            >
               <LearnerAvatar name={user?.name ?? "User"} hue={216} size={28} />
               <span className="hidden min-w-0 text-left sm:block">
-                <span className="block truncate text-[12px] font-semibold text-foreground">{user?.name}</span>
-                <span className="block truncate text-[10px] text-muted-foreground">{user?.roleName}</span>
+                <span className="block truncate text-[12px] font-semibold text-foreground">
+                  {user?.name}
+                </span>
+                <span className="block truncate text-[10px] text-muted-foreground">
+                  {user?.roleName}
+                </span>
               </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="text-[12px]">
               {user?.name}
-              <span className="block text-[11px] font-normal text-muted-foreground">{user?.email}</span>
+              <span className="block text-[11px] font-normal text-muted-foreground">
+                {user?.email}
+              </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => toast("My profile", { description: "Profile management opens here." })}>
+            <DropdownMenuItem
+              onSelect={() =>
+                toast("My profile", { description: "Profile management opens here." })
+              }
+            >
               <UserRound className="h-4 w-4" /> My profile
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => toast.success("Password reset link sent to your email")}>
+            <DropdownMenuItem
+              onSelect={() => toast.success("Password reset link sent to your email")}
+            >
               <KeyRound className="h-4 w-4" /> Change password
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => toast("Help centre", { description: "Guides for attendance and welfare." })}>
+            <DropdownMenuItem
+              onSelect={() =>
+                toast("Help centre", { description: "Guides for attendance and welfare." })
+              }
+            >
               <HelpCircle className="h-4 w-4" /> Help
             </DropdownMenuItem>
             <DropdownMenuSeparator />

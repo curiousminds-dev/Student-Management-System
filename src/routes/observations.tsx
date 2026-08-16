@@ -16,13 +16,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -36,20 +59,33 @@ export const Route = createFileRoute("/observations")({
       { title: "Observations — factual learner conduct records" },
       {
         name: "description",
-        content: "Record and review factual, non-permanent observations of learner conduct, welfare and academic behaviour at Nile Crest Secondary School.",
+        content:
+          "Record and review factual, non-permanent observations of learner conduct, welfare and academic behaviour at Nile Crest Secondary School.",
       },
       { property: "og:title", content: "Observations — factual learner conduct records" },
-      { property: "og:description", content: "Factual observation records with category, severity and follow-up tracking." },
+      {
+        property: "og:description",
+        content: "Factual observation records with category, severity and follow-up tracking.",
+      },
     ],
   }),
   component: ObservationsPage,
 });
 
 const CATEGORIES: Observation["category"][] = [
-  "Positive conduct", "Academic observation", "Minor concern", "Welfare concern", "General observation", "Serious alleged incident",
+  "Positive conduct",
+  "Academic observation",
+  "Minor concern",
+  "Welfare concern",
+  "General observation",
+  "Serious alleged incident",
 ];
 const SEVERITIES: Observation["severity"][] = ["low", "medium", "high"];
-const SEVERITY_TONE: Record<Observation["severity"], BadgeTone> = { low: "success", medium: "warning", high: "danger" };
+const SEVERITY_TONE: Record<Observation["severity"], BadgeTone> = {
+  low: "success",
+  medium: "warning",
+  high: "danger",
+};
 
 const DEFAULT_FILTERS = { search: "", category: "all", severity: "all", from: "", to: "" };
 
@@ -80,8 +116,16 @@ function RecordObservationDialog({ onCreated }: { onCreated: () => void }) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      learnerName: "", category: "General observation", severity: "low", dateTime: "", location: "",
-      relatedOccasion: "", description: "", immediateAction: "", recommendedFollowUp: "", witnesses: "",
+      learnerName: "",
+      category: "General observation",
+      severity: "low",
+      dateTime: "",
+      location: "",
+      relatedOccasion: "",
+      description: "",
+      immediateAction: "",
+      recommendedFollowUp: "",
+      witnesses: "",
       parentContactRecommended: false,
     },
   });
@@ -97,10 +141,17 @@ function RecordObservationDialog({ onCreated }: { onCreated: () => void }) {
       description: values.description,
       immediateAction: values.immediateAction,
       recommendedFollowUp: values.recommendedFollowUp,
-      witnesses: values.witnesses ? values.witnesses.split(",").map((w) => w.trim()).filter(Boolean) : [],
+      witnesses: values.witnesses
+        ? values.witnesses
+            .split(",")
+            .map((w) => w.trim())
+            .filter(Boolean)
+        : [],
       parentContactRecommended: values.parentContactRecommended,
     });
-    toast.success("Observation recorded", { description: `A factual record for ${values.learnerName} has been saved.` });
+    toast.success("Observation recorded", {
+      description: `A factual record for ${values.learnerName} has been saved.`,
+    });
     form.reset();
     setOpen(false);
     onCreated();
@@ -117,108 +168,197 @@ function RecordObservationDialog({ onCreated }: { onCreated: () => void }) {
         <DialogHeader>
           <DialogTitle>Record an observation</DialogTitle>
           <DialogDescription>
-            Record a factual, non-permanent account of what was observed. Avoid characterising the learner; describe events only.
+            Record a factual, non-permanent account of what was observed. Avoid characterising the
+            learner; describe events only.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)}>
-            <FormField control={form.control} name="learnerName" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Learner</FormLabel>
-                <FormControl><Input placeholder="e.g. Patricia Nakato" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <FormField
+              control={form.control}
+              name="learnerName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Learner</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Patricia Nakato" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="category" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="severity" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Severity</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {SEVERITIES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {CATEGORIES.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="severity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Severity</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SEVERITIES.map((s) => (
+                          <SelectItem key={s} value={s} className="capitalize">
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="dateTime" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date &amp; time</FormLabel>
-                  <FormControl><Input type="datetime-local" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="location" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl><Input placeholder="e.g. Dining Hall" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <FormField
+                control={form.control}
+                name="dateTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date &amp; time</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Dining Hall" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <FormField control={form.control} name="relatedOccasion" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Related occasion (optional)</FormLabel>
-                <FormControl><Input placeholder="e.g. Evening prep" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Factual description</FormLabel>
-                <FormControl><Textarea rows={3} placeholder="Describe exactly what was observed, without judgement." {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="immediateAction" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Immediate action taken</FormLabel>
-                <FormControl><Textarea rows={2} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="recommendedFollowUp" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Recommended follow-up</FormLabel>
-                <FormControl><Textarea rows={2} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="witnesses" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Witnesses (comma separated, optional)</FormLabel>
-                <FormControl><Input placeholder="e.g. Faith Atim, Joshua Kato" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <FormField
+              control={form.control}
+              name="relatedOccasion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Related occasion (optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Evening prep" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Factual description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      rows={3}
+                      placeholder="Describe exactly what was observed, without judgement."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="immediateAction"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Immediate action taken</FormLabel>
+                  <FormControl>
+                    <Textarea rows={2} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="recommendedFollowUp"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Recommended follow-up</FormLabel>
+                  <FormControl>
+                    <Textarea rows={2} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="witnesses"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Witnesses (comma separated, optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Faith Atim, Joshua Kato" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-[12px] text-muted-foreground">
-              <Paperclip className="h-3.5 w-3.5" /> Attachments — file upload will be available once document storage is connected.
+              <Paperclip className="h-3.5 w-3.5" /> Attachments — file upload will be available once
+              document storage is connected.
             </div>
-            <FormField control={form.control} name="parentContactRecommended" render={({ field }) => (
-              <FormItem className="flex flex-row items-center gap-2 space-y-0">
-                <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={(c) => field.onChange(Boolean(c))} />
-                </FormControl>
-                <FormLabel className="!mt-0 text-[13px] font-normal">Recommend parent/guardian contact</FormLabel>
-              </FormItem>
-            )} />
+            <FormField
+              control={form.control}
+              name="parentContactRecommended"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(c) => field.onChange(Boolean(c))}
+                    />
+                  </FormControl>
+                  <FormLabel className="!mt-0 text-[13px] font-normal">
+                    Recommend parent/guardian contact
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
             <DialogFooter>
-              <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
               <Button type="submit" size="sm" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Saving…" : "Save observation"}
               </Button>
@@ -241,10 +381,16 @@ function ObservationsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const pageSize = 10;
 
-  const query = useQuery({ queryKey: ["observations"], queryFn: () => supportService.observations() });
-  const learnersQuery = useQuery({ queryKey: ["learners-lite"], queryFn: () => learnerService.list({ pageSize: 240 }) });
+  const query = useQuery({
+    queryKey: ["observations"],
+    queryFn: () => supportService.observations(),
+  });
+  const learnersQuery = useQuery({
+    queryKey: ["learners-lite"],
+    queryFn: () => learnerService.list({ pageSize: 240 }),
+  });
 
-  const rows = query.data ?? [];
+  const rows = useMemo(() => query.data ?? [], [query.data]);
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return rows.filter((o) => {
@@ -261,22 +407,36 @@ function ObservationsPage() {
   const selected = rows.find((r) => r.id === selectedId) ?? null;
   const selectedHidden = selected ? isConfidentialToUser(selected, canWelfare, canCases) : false;
 
-  const learnerHue = (name: string) => learnersQuery.data?.data.find((l) => l.fullName === name)?.photoHue ?? 210;
+  const learnerHue = (name: string) =>
+    learnersQuery.data?.data.find((l) => l.fullName === name)?.photoHue ?? 210;
 
-  const update = (patch: Partial<typeof filters>) => { setFilters((f) => ({ ...f, ...patch })); setPage(1); };
+  const update = (patch: Partial<typeof filters>) => {
+    setFilters((f) => ({ ...f, ...patch }));
+    setPage(1);
+  };
 
   return (
     <AppShell permission={["observations.view", "observations.create"]} area="observations">
       <PageHeader
         title="Observations"
-        description={query.isLoading ? "Loading observation records…" : `${filtered.length} observation${filtered.length === 1 ? "" : "s"} match the current filters.`}
-        actions={can("observations.create") ? <RecordObservationDialog onCreated={() => void queryClient.invalidateQueries({ queryKey: ["observations"] })} /> : null}
+        description={
+          query.isLoading
+            ? "Loading observation records…"
+            : `${filtered.length} observation${filtered.length === 1 ? "" : "s"} match the current filters.`
+        }
+        actions={
+          can("observations.create") ? (
+            <RecordObservationDialog
+              onCreated={() => void queryClient.invalidateQueries({ queryKey: ["observations"] })}
+            />
+          ) : null
+        }
       />
 
       {!canWelfare || !canCases ? (
         <SensitiveNotice className="mb-3">
-          Welfare concerns and serious alleged incidents are confidential. Records outside your permissions are hidden
-          from lists and cannot be opened.
+          Welfare concerns and serious alleged incidents are confidential. Records outside your
+          permissions are hidden from lists and cannot be opened.
         </SensitiveNotice>
       ) : null}
 
@@ -284,26 +444,63 @@ function ObservationsPage() {
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
           <div className="relative min-w-[220px] flex-1">
             <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input aria-label="Search observations" placeholder="Search by learner or reference" className="h-8 pl-8 text-[13px]"
-              value={filters.search} onChange={(e) => update({ search: e.target.value })} />
+            <Input
+              aria-label="Search observations"
+              placeholder="Search by learner or reference"
+              className="h-8 pl-8 text-[13px]"
+              value={filters.search}
+              onChange={(e) => update({ search: e.target.value })}
+            />
           </div>
           <Select value={filters.category} onValueChange={(v) => update({ category: v })}>
-            <SelectTrigger className="h-8 w-auto min-w-[150px] text-[12px]" aria-label="Category"><SelectValue placeholder="Category" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-auto min-w-[150px] text-[12px]" aria-label="Category">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
-              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={filters.severity} onValueChange={(v) => update({ severity: v })}>
-            <SelectTrigger className="h-8 w-auto min-w-[110px] text-[12px]" aria-label="Severity"><SelectValue placeholder="Severity" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-auto min-w-[110px] text-[12px]" aria-label="Severity">
+              <SelectValue placeholder="Severity" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All severities</SelectItem>
-              {SEVERITIES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+              {SEVERITIES.map((s) => (
+                <SelectItem key={s} value={s} className="capitalize">
+                  {s}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Input type="date" aria-label="From date" className="h-8 w-auto text-[12px]" value={filters.from} onChange={(e) => update({ from: e.target.value })} />
-          <Input type="date" aria-label="To date" className="h-8 w-auto text-[12px]" value={filters.to} onChange={(e) => update({ to: e.target.value })} />
-          <Button variant="ghost" size="sm" className="h-8 text-[12px]" onClick={() => { setFilters(DEFAULT_FILTERS); setPage(1); }}>
+          <Input
+            type="date"
+            aria-label="From date"
+            className="h-8 w-auto text-[12px]"
+            value={filters.from}
+            onChange={(e) => update({ from: e.target.value })}
+          />
+          <Input
+            type="date"
+            aria-label="To date"
+            className="h-8 w-auto text-[12px]"
+            value={filters.to}
+            onChange={(e) => update({ to: e.target.value })}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-[12px]"
+            onClick={() => {
+              setFilters(DEFAULT_FILTERS);
+              setPage(1);
+            }}
+          >
             <RotateCcw className="h-3.5 w-3.5" /> Reset
           </Button>
         </div>
@@ -313,7 +510,11 @@ function ObservationsPage() {
         ) : query.isLoading ? (
           <TableSkeleton rows={8} columns={8} />
         ) : filtered.length === 0 ? (
-          <EmptyState title="No observations found" description="Adjust your filters or record a new observation." icon={Eye} />
+          <EmptyState
+            title="No observations found"
+            description="Adjust your filters or record a new observation."
+            icon={Eye}
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -334,27 +535,59 @@ function ObservationsPage() {
                   {paged.map((o) => {
                     const hidden = isConfidentialToUser(o, canWelfare, canCases);
                     return (
-                      <tr key={o.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setSelectedId(o.id)}
-                        role="button" tabIndex={0} aria-label={`Open observation ${o.reference}`}>
+                      <tr
+                        key={o.id}
+                        className="cursor-pointer hover:bg-muted/40"
+                        onClick={() => setSelectedId(o.id)}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Open observation ${o.reference}`}
+                      >
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
-                            <LearnerAvatar name={o.learnerName} hue={learnerHue(o.learnerName)} size={26} />
+                            <LearnerAvatar
+                              name={o.learnerName}
+                              hue={learnerHue(o.learnerName)}
+                              size={26}
+                            />
                             <div className="min-w-0">
-                              <p className="truncate font-medium text-foreground">{o.learnerName}</p>
-                              <p className="truncate text-[11px] text-muted-foreground">{o.className}</p>
+                              <p className="truncate font-medium text-foreground">
+                                {o.learnerName}
+                              </p>
+                              <p className="truncate text-[11px] text-muted-foreground">
+                                {o.className}
+                              </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 font-mono text-[12px] text-muted-foreground">{o.reference}</td>
-                        <td className="px-4 py-2.5">
-                          {hidden ? <Badge variant="outline" className="text-[11px]">Confidential</Badge> : <span>{o.category}</span>}
+                        <td className="px-4 py-2.5 font-mono text-[12px] text-muted-foreground">
+                          {o.reference}
                         </td>
-                        <td className="px-4 py-2.5"><StatusBadge status={o.severity} tone={SEVERITY_TONE[o.severity]} /></td>
+                        <td className="px-4 py-2.5">
+                          {hidden ? (
+                            <Badge variant="outline" className="text-[11px]">
+                              Confidential
+                            </Badge>
+                          ) : (
+                            <span>{o.category}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <StatusBadge status={o.severity} tone={SEVERITY_TONE[o.severity]} />
+                        </td>
                         <td className="px-4 py-2.5 text-muted-foreground">{o.dateTime}</td>
                         <td className="px-4 py-2.5">{hidden ? "—" : o.location}</td>
                         <td className="px-4 py-2.5">{o.recordedBy}</td>
                         <td className="px-4 py-2.5">
-                          {hidden ? "—" : <span className="text-[12px] text-muted-foreground">{o.recommendedFollowUp === "No further action required." ? "Closed" : "In progress"}</span>}
+                          {hidden ? (
+                            "—"
+                          ) : (
+                            <span className="text-[12px] text-muted-foreground">
+                              {o.recommendedFollowUp === "No further action required."
+                                ? "Closed"
+                                : "In progress"}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -362,7 +595,12 @@ function ObservationsPage() {
                 </tbody>
               </table>
             </div>
-            <TablePagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              total={filtered.length}
+              onPageChange={setPage}
+            />
           </>
         )}
       </SectionCard>
@@ -373,49 +611,87 @@ function ObservationsPage() {
             <>
               <SheetHeader>
                 <SheetTitle>{selected.reference}</SheetTitle>
-                <SheetDescription>{selected.learnerName} · {selected.className}</SheetDescription>
+                <SheetDescription>
+                  {selected.learnerName} · {selected.className}
+                </SheetDescription>
               </SheetHeader>
               <div className="space-y-4 px-4 pb-6">
                 {selectedHidden ? (
                   <SensitiveNotice>
-                    This is a confidential {selected.category.toLowerCase()} record. Your role does not have
-                    permission to view welfare or case details.
+                    This is a confidential {selected.category.toLowerCase()} record. Your role does
+                    not have permission to view welfare or case details.
                   </SensitiveNotice>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="secondary">{selected.category}</Badge>
-                      <StatusBadge status={selected.severity} tone={SEVERITY_TONE[selected.severity]} />
+                      <StatusBadge
+                        status={selected.severity}
+                        tone={SEVERITY_TONE[selected.severity]}
+                      />
                       {selected.confidential ? <Badge variant="outline">Confidential</Badge> : null}
                     </div>
                     <dl className="grid grid-cols-2 gap-3 text-[12px]">
-                      <div><dt className="text-muted-foreground">Date &amp; time</dt><dd className="font-medium text-foreground">{selected.dateTime}</dd></div>
-                      <div><dt className="text-muted-foreground">Location</dt><dd className="font-medium text-foreground">{selected.location}</dd></div>
-                      <div><dt className="text-muted-foreground">Related occasion</dt><dd className="font-medium text-foreground">{selected.relatedOccasion ?? "None"}</dd></div>
-                      <div><dt className="text-muted-foreground">Recorded by</dt><dd className="font-medium text-foreground">{selected.recordedBy}</dd></div>
+                      <div>
+                        <dt className="text-muted-foreground">Date &amp; time</dt>
+                        <dd className="font-medium text-foreground">{selected.dateTime}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Location</dt>
+                        <dd className="font-medium text-foreground">{selected.location}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Related occasion</dt>
+                        <dd className="font-medium text-foreground">
+                          {selected.relatedOccasion ?? "None"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Recorded by</dt>
+                        <dd className="font-medium text-foreground">{selected.recordedBy}</dd>
+                      </div>
                     </dl>
                     <div>
-                      <h3 className="mb-1 text-[12px] font-semibold text-foreground">Factual description</h3>
+                      <h3 className="mb-1 text-[12px] font-semibold text-foreground">
+                        Factual description
+                      </h3>
                       <p className="text-[13px] text-muted-foreground">{selected.description}</p>
                     </div>
                     <div>
-                      <h3 className="mb-1 text-[12px] font-semibold text-foreground">Immediate action</h3>
-                      <p className="text-[13px] text-muted-foreground">{selected.immediateAction}</p>
+                      <h3 className="mb-1 text-[12px] font-semibold text-foreground">
+                        Immediate action
+                      </h3>
+                      <p className="text-[13px] text-muted-foreground">
+                        {selected.immediateAction}
+                      </p>
                     </div>
                     <div>
-                      <h3 className="mb-1 text-[12px] font-semibold text-foreground">Recommended follow-up</h3>
-                      <p className="text-[13px] text-muted-foreground">{selected.recommendedFollowUp}</p>
+                      <h3 className="mb-1 text-[12px] font-semibold text-foreground">
+                        Recommended follow-up
+                      </h3>
+                      <p className="text-[13px] text-muted-foreground">
+                        {selected.recommendedFollowUp}
+                      </p>
                     </div>
                     <div>
                       <h3 className="mb-1 text-[12px] font-semibold text-foreground">Witnesses</h3>
-                      <p className="text-[13px] text-muted-foreground">{selected.witnesses.length ? selected.witnesses.join(", ") : "None recorded"}</p>
+                      <p className="text-[13px] text-muted-foreground">
+                        {selected.witnesses.length
+                          ? selected.witnesses.join(", ")
+                          : "None recorded"}
+                      </p>
                     </div>
                     <div>
-                      <h3 className="mb-1 text-[12px] font-semibold text-foreground">Attachments</h3>
+                      <h3 className="mb-1 text-[12px] font-semibold text-foreground">
+                        Attachments
+                      </h3>
                       <p className="text-[13px] text-muted-foreground">No attachments uploaded.</p>
                     </div>
                     <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px]">
-                      Parent/guardian contact {selected.parentContactRecommended ? "is recommended for this record." : "is not currently recommended."}
+                      Parent/guardian contact{" "}
+                      {selected.parentContactRecommended
+                        ? "is recommended for this record."
+                        : "is not currently recommended."}
                     </div>
                   </>
                 )}
