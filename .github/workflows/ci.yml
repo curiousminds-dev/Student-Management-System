@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: file:/tmp/student-management-ci.db
+      JWT_SECRET: ci-only-secret-that-is-at-least-32-characters
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
+      - run: npm test
+      # The inherited Lovable frontend has legacy formatting debt; enforce all
+      # newly added backend and integration paths while that debt is reduced.
+      - run: npm run lint:ci
+      - run: npm run build

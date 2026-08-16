@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  campuses  Campus[]
+  users     User[]
+  learners  Learner[]
+  devices   Device[]
+}
+
+model Campus {
+  id        String               @id @default(cuid())
+  schoolId  String
+  name      String
+  district  String
+  school    School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  users     User[]
+  learners  Learner[]
+  occasions AttendanceOccasion[]
+
+  @@unique([schoolId, name])
+}
+
+model User {
+  id           String       @id @default(cuid())
+  schoolId     String
+  campusId     String?
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         String
+  active       Boolean      @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus       Campus?      @relation(fields: [campusId], references: [id])
+  auditEvents  AuditEvent[]
+  messages     Message[]
+}
+
+model Learner {
+  id              String             @id @default(cuid())
+  schoolId        String
+  campusId        String
+  firstName       String
+  lastName        String
+  admissionNumber String
+  lin             String?
+  className       String
+  stream          String
+  gender          String
+  residence       String
+  dateOfBirth     DateTime
+  guardianName    String
+  guardianPhone   String
+  status          String             @default("active")
+  enrolledOn      DateTime           @default(now())
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  school          School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus          Campus             @relation(fields: [campusId], references: [id])
+  credentials     QrCredential[]
+  attendance      AttendanceRecord[]
+
+  @@unique([schoolId, admissionNumber])
+  @@index([schoolId, className, stream])
+}
+
+model QrCredential {
+  id            String    @id @default(cuid())
+  learnerId     String
+  serialHash    String    @unique
+  serialPreview String
+  status        String    @default("active")
+  issuedAt      DateTime  @default(now())
+  issuedById    String
+  revokedAt     DateTime?
+  revokedReason String?
+  learner       Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, status])
+}
+
+model AttendanceOccasion {
+  id                 String             @id @default(cuid())
+  campusId           String
+  name               String
+  category           String
+  location           String
+  startsAt           DateTime
+  endsAt             DateTime
+  expected           Int
+  status             String             @default("scheduled")
+  responsibleStaffId String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  campus             Campus             @relation(fields: [campusId], references: [id])
+  records            AttendanceRecord[]
+
+  @@index([campusId, startsAt])
+}
+
+model Device {
+  id          String             @id @default(cuid())
+  schoolId    String
+  name        String
+  publicId    String             @unique
+  secretHash  String
+  location    String
+  status      String             @default("active")
+  lastSyncAt  DateTime?
+  createdAt   DateTime           @default(now())
+  school      School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  records     AttendanceRecord[]
+  syncBatches SyncBatch[]
+}
+
+model AttendanceRecord {
+  id             String             @id @default(cuid())
+  schoolId       String
+  clientEventId  String?
+  learnerId      String
+  occasionId     String
+  deviceId       String?
+  status         String
+  outcome        String             @default("accepted")
+  recordedAt     DateTime
+  recordedById   String
+  source         String             @default("online")
+  reconciliation String             @default("not_required")
+  createdAt      DateTime           @default(now())
+  learner        Learner            @relation(fields: [learnerId], references: [id])
+  occasion       AttendanceOccasion @relation(fields: [occasionId], references: [id])
+  device         Device?            @relation(fields: [deviceId], references: [id])
+
+  @@unique([schoolId, clientEventId])
+  @@unique([learnerId, occasionId])
+  @@index([schoolId, recordedAt])
+}
+
+model SyncBatch {
+  id            String   @id @default(cuid())
+  deviceId      String
+  clientBatchId String
+  received      Int
+  accepted      Int
+  rejected      Int
+  syncedAt      DateTime @default(now())
+  device        Device   @relation(fields: [deviceId], references: [id])
+
+  @@unique([deviceId, clientBatchId])
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  schoolId    String
+  senderId    String
+  channel     String
+  recipients  String
+  subject     String?
+  body        String
+  status      String    @default("queued")
+  providerRef String?
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+  sender      User      @relation(fields: [senderId], references: [id])
+
+  @@index([schoolId, createdAt])
+}
+
+model AuditEvent {
+  id            String   @id @default(cuid())
+  schoolId      String
+  actorId       String?
+  action        String
+  entityType    String
+  entityId      String?
+  beforeJson    String?
+  afterJson     String?
+  ipAddress     String?
+  userAgent     String?
+  correlationId String
+  createdAt     DateTime @default(now())
+  actor         User?    @relation(fields: [actorId], references: [id])
+
+  @@index([schoolId, createdAt])
+  @@index([entityType, entityId])
+}

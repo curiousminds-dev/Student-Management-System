@@ -2,39 +2,82 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AlertTriangle, Camera, CheckCircle2, Flashlight, Ban, ScanLine, Volume2, VolumeX, WifiOff, Wifi, XCircle,
+  AlertTriangle,
+  Camera,
+  CheckCircle2,
+  Flashlight,
+  Ban,
+  ScanLine,
+  Volume2,
+  VolumeX,
+  WifiOff,
+  Wifi,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { LearnerAvatar } from "@/components/common/LearnerAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { attendanceService, deviceService, learnerService } from "@/services";
 import { cn } from "@/lib/utils";
+import { clearQueuedScans, queueScan, queuedScans } from "@/lib/offline-sync";
+import { USE_MOCK_DATA } from "@/services/api-client";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
     meta: [
       { title: "Scanning mode — attendance checkpoint" },
-      { name: "description", content: "Full-screen QR scanning workspace for gate, assembly, dormitory and class checkpoints." },
+      {
+        name: "description",
+        content:
+          "Full-screen QR scanning workspace for gate, assembly, dormitory and class checkpoints.",
+      },
       { property: "og:title", content: "Scanning mode — attendance checkpoint" },
-      { property: "og:description", content: "Live checkpoint scanning workspace with instant learner confirmation." },
+      {
+        property: "og:description",
+        content: "Live checkpoint scanning workspace with instant learner confirmation.",
+      },
     ],
   }),
   component: ScanPage,
 });
 
 type ScanState =
-  | "success" | "late" | "duplicate" | "wrong_class" | "wrong_group" | "wrong_bus" | "revoked"
-  | "unknown" | "not_expected" | "disabled_device" | "offline_queued";
+  | "success"
+  | "late"
+  | "duplicate"
+  | "wrong_class"
+  | "wrong_group"
+  | "wrong_bus"
+  | "revoked"
+  | "unknown"
+  | "not_expected"
+  | "disabled_device"
+  | "offline_queued";
 
-const STATE_META: Record<ScanState, { label: string; tone: "success" | "warning" | "danger"; icon: typeof CheckCircle2 }> = {
+const STATE_META: Record<
+  ScanState,
+  { label: string; tone: "success" | "warning" | "danger"; icon: typeof CheckCircle2 }
+> = {
   success: { label: "Attendance recorded", tone: "success", icon: CheckCircle2 },
   late: { label: "Late arrival", tone: "warning", icon: AlertTriangle },
   duplicate: { label: "Duplicate scan", tone: "warning", icon: AlertTriangle },
@@ -49,8 +92,17 @@ const STATE_META: Record<ScanState, { label: string; tone: "success" | "warning"
 };
 
 const STATE_ORDER: ScanState[] = [
-  "success", "late", "duplicate", "wrong_class", "wrong_group", "wrong_bus",
-  "revoked", "unknown", "not_expected", "disabled_device", "offline_queued",
+  "success",
+  "late",
+  "duplicate",
+  "wrong_class",
+  "wrong_group",
+  "wrong_bus",
+  "revoked",
+  "unknown",
+  "not_expected",
+  "disabled_device",
+  "offline_queued",
 ];
 
 const TONE_CLASSES: Record<"success" | "warning" | "danger", string> = {
@@ -71,15 +123,24 @@ interface ScanResult {
 }
 
 function ScanPage() {
-  const occasionsQuery = useQuery({ queryKey: ["scan-occasions"], queryFn: () => attendanceService.occasions() });
-  const devicesQuery = useQuery({ queryKey: ["scan-devices"], queryFn: () => deviceService.list() });
-  const learnersQuery = useQuery({ queryKey: ["scan-learners"], queryFn: () => learnerService.list({ pageSize: 40 }) });
+  const occasionsQuery = useQuery({
+    queryKey: ["scan-occasions"],
+    queryFn: () => attendanceService.occasions(),
+  });
+  const devicesQuery = useQuery({
+    queryKey: ["scan-devices"],
+    queryFn: () => deviceService.list(),
+  });
+  const learnersQuery = useQuery({
+    queryKey: ["scan-learners"],
+    queryFn: () => learnerService.list({ pageSize: 40 }),
+  });
 
   const [occasionId, setOccasionId] = useState<string>("");
   const [deviceId, setDeviceId] = useState<string>("");
   const [staffMember, setStaffMember] = useState("Moses Ochieng");
   const [online, setOnline] = useState(true);
-  const [pendingSync, setPendingSync] = useState(3);
+  const [pendingSync, setPendingSync] = useState(() => queuedScans().length);
   const [sound, setSound] = useState(true);
   const [flash, setFlash] = useState(false);
   const [camera, setCamera] = useState<"rear" | "front">("rear");
@@ -101,57 +162,144 @@ function ScanPage() {
   const device = devicesQuery.data?.find((d) => d.id === deviceId);
   const learners = learnersQuery.data?.data ?? [];
 
-  const triggerScan = (forcedState?: ScanState) => {
-    if (learners.length === 0) return;
-    const idx = cycleRef.current % learners.length;
-    const learner = learners[idx]!;
-    cycleRef.current += 1;
-    const state = forcedState ?? STATE_ORDER[cycleRef.current % STATE_ORDER.length]!;
-    const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const showResult = (learner: (typeof learners)[number], state: ScanState) => {
+    const time = new Date().toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
     const result: ScanResult = {
-      id: `res-${Date.now()}-${idx}`,
+      id: `res-${Date.now()}`,
       learnerName: learner.fullName,
       admissionNumber: learner.admissionNumber,
       className: learner.className,
       stream: learner.stream,
       photoHue: learner.photoHue,
-      state: online ? state : "offline_queued",
+      state,
       time,
     };
     setCurrent(result);
     setHistory((h) => [result, ...h].slice(0, 25));
-    if (!online) setPendingSync((p) => p + 1);
-    if (sound) toast(STATE_META[result.state].label, { description: `${learner.fullName} · ${learner.admissionNumber}` });
+    if (sound)
+      toast(STATE_META[state].label, {
+        description: `${learner.fullName} · ${learner.admissionNumber}`,
+      });
   };
 
-  const handleManualSubmit = () => {
+  const triggerMockScan = (forcedState?: ScanState) => {
+    if (learners.length === 0) return;
+    const idx = cycleRef.current % learners.length;
+    const learner = learners[idx]!;
+    cycleRef.current += 1;
+    const state = forcedState ?? STATE_ORDER[cycleRef.current % STATE_ORDER.length]!;
+    const resultState = online ? state : "offline_queued";
+    if (!online) setPendingSync((p) => p + 1);
+    showResult(learner, resultState);
+  };
+
+  const handleManualSubmit = async () => {
     if (!manualInput.trim()) return;
-    triggerScan();
+    if (USE_MOCK_DATA) {
+      triggerMockScan();
+      setManualInput("");
+      return;
+    }
+    if (!occasionId || !deviceId) {
+      toast.error("Select an occasion and device first");
+      return;
+    }
+    const event = {
+      credential: manualInput.trim(),
+      occasionId,
+      deviceId,
+      clientEventId: crypto.randomUUID(),
+      recordedAt: new Date().toISOString(),
+    };
+    if (!online) {
+      setPendingSync(queueScan(event));
+      const learner = learners[0];
+      if (learner) showResult(learner, "offline_queued");
+      setManualInput("");
+      return;
+    }
+    try {
+      const response = await attendanceService.scan(event);
+      const learner = response.learner;
+      if (learner)
+        showResult(
+          learner,
+          response.outcome === "accepted"
+            ? "success"
+            : response.outcome === "revoked_card"
+              ? "revoked"
+              : (response.outcome as ScanState),
+        );
+      else
+        toast.error(
+          STATE_META[response.outcome === "unknown_card" ? "unknown" : "not_expected"].label,
+        );
+    } catch {
+      queueScan(event);
+      setPendingSync(queuedScans().length);
+      toast.warning("Network unavailable — scan queued safely");
+    }
     setManualInput("");
   };
+
+  useEffect(() => {
+    if (!online || USE_MOCK_DATA || pendingSync === 0) return;
+    const events = queuedScans();
+    if (!events.length) return;
+    void attendanceService
+      .sync({ clientBatchId: crypto.randomUUID(), events })
+      .then(() => {
+        clearQueuedScans();
+        setPendingSync(0);
+        toast.success("Offline scans synchronized");
+      })
+      .catch(() => undefined);
+  }, [online, pendingSync]);
 
   const meta = current ? STATE_META[current.state] : null;
   const Icon = meta?.icon ?? ScanLine;
 
   return (
-    <AppShell fullBleed permission={["attendance.record", "attendance.view"]} area="the scanning workspace">
+    <AppShell
+      fullBleed
+      permission={["attendance.record", "attendance.view"]}
+      area="the scanning workspace"
+    >
       <div className="flex min-h-[calc(100vh-56px)] flex-col bg-primary text-primary-foreground">
         {/* Header strip */}
         <div className="flex flex-wrap items-center gap-2 border-b border-primary-foreground/10 bg-primary px-4 py-2.5">
           <Select value={occasionId} onValueChange={setOccasionId}>
-            <SelectTrigger className="h-9 w-auto min-w-[190px] border-primary-foreground/20 bg-primary-foreground/10 text-[12.5px] text-primary-foreground" aria-label="Occasion">
+            <SelectTrigger
+              className="h-9 w-auto min-w-[190px] border-primary-foreground/20 bg-primary-foreground/10 text-[12.5px] text-primary-foreground"
+              aria-label="Occasion"
+            >
               <SelectValue placeholder="Occasion" />
             </SelectTrigger>
             <SelectContent>
-              {(occasionsQuery.data ?? []).map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+              {(occasionsQuery.data ?? []).map((o) => (
+                <SelectItem key={o.id} value={o.id}>
+                  {o.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={deviceId} onValueChange={setDeviceId}>
-            <SelectTrigger className="h-9 w-auto min-w-[170px] border-primary-foreground/20 bg-primary-foreground/10 text-[12.5px] text-primary-foreground" aria-label="Device">
+            <SelectTrigger
+              className="h-9 w-auto min-w-[170px] border-primary-foreground/20 bg-primary-foreground/10 text-[12.5px] text-primary-foreground"
+              aria-label="Device"
+            >
               <SelectValue placeholder="Device" />
             </SelectTrigger>
             <SelectContent>
-              {(devicesQuery.data ?? []).map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              {(devicesQuery.data ?? []).map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Input
@@ -161,19 +309,25 @@ function ScanPage() {
             className="h-9 w-[160px] border-primary-foreground/20 bg-primary-foreground/10 text-[12.5px] text-primary-foreground placeholder:text-primary-foreground/60"
           />
           <div className="ml-auto flex items-center gap-3 text-[12px]">
-            <span className="hidden text-primary-foreground/70 sm:inline">{device?.location ?? "Checkpoint"}</span>
+            <span className="hidden text-primary-foreground/70 sm:inline">
+              {device?.location ?? "Checkpoint"}
+            </span>
             <button
               type="button"
               onClick={() => setOnline((v) => !v)}
               className={cn(
                 "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium",
-                online ? "border-success/40 bg-success-soft text-success" : "border-warning/40 bg-warning-soft text-[oklch(0.52_0.12_74)]",
+                online
+                  ? "border-success/40 bg-success-soft text-success"
+                  : "border-warning/40 bg-warning-soft text-[oklch(0.52_0.12_74)]",
               )}
             >
               {online ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
               {online ? "Online" : "Offline"}
             </button>
-            <span className="rounded-full bg-primary-foreground/10 px-2.5 py-1 font-medium">{pendingSync} pending sync</span>
+            <span className="rounded-full bg-primary-foreground/10 px-2.5 py-1 font-medium">
+              {pendingSync} pending sync
+            </span>
           </div>
         </div>
 
@@ -197,14 +351,23 @@ function ScanPage() {
                 placeholder="Scan or type QR serial, then press Enter (simulates USB scanner input)"
                 value={manualInput}
                 onChange={(e) => setManualInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleManualSubmit()}
+                onKeyDown={(e) => e.key === "Enter" && void handleManualSubmit()}
                 className="h-11 flex-1 border-primary-foreground/20 bg-primary-foreground/10 text-[13.5px] text-primary-foreground placeholder:text-primary-foreground/50"
               />
-              <Button size="lg" className="h-11" onClick={handleManualSubmit}>Simulate scan</Button>
+              <Button size="lg" className="h-11" onClick={() => void handleManualSubmit()}>
+                {USE_MOCK_DATA ? "Simulate scan" : "Record scan"}
+              </Button>
             </div>
 
             {/* Result card */}
-            <div className={cn("flex flex-1 items-center gap-5 rounded-2xl border-2 p-6", meta ? TONE_CLASSES[meta.tone] : "border-primary-foreground/15 bg-primary-foreground/5 text-primary-foreground/60")}>
+            <div
+              className={cn(
+                "flex flex-1 items-center gap-5 rounded-2xl border-2 p-6",
+                meta
+                  ? TONE_CLASSES[meta.tone]
+                  : "border-primary-foreground/15 bg-primary-foreground/5 text-primary-foreground/60",
+              )}
+            >
               {current ? (
                 <>
                   <LearnerAvatar name={current.learnerName} hue={current.photoHue} size={92} ring />
@@ -214,8 +377,12 @@ function ScanPage() {
                       <p className="truncate text-lg font-semibold">{meta!.label}</p>
                     </div>
                     <p className="mt-1 truncate text-xl font-bold">{current.learnerName}</p>
-                    <p className="text-[13px] opacity-80">{current.admissionNumber} · {current.className} {current.stream}</p>
-                    <p className="mt-1 text-[13px] opacity-80">{occasion?.name ?? "Occasion"} · Scanned at {current.time}</p>
+                    <p className="text-[13px] opacity-80">
+                      {current.admissionNumber} · {current.className} {current.stream}
+                    </p>
+                    <p className="mt-1 text-[13px] opacity-80">
+                      {occasion?.name ?? "Occasion"} · Scanned at {current.time}
+                    </p>
                   </div>
                 </>
               ) : (
@@ -230,14 +397,21 @@ function ScanPage() {
           {/* Sidebar */}
           <div className="flex flex-col gap-4">
             <div className="rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 p-3">
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-primary-foreground/70">Controls</p>
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-primary-foreground/70">
+                Controls
+              </p>
               <div className="grid grid-cols-1 gap-2">
                 <div className="flex items-center justify-between rounded-lg bg-primary-foreground/5 px-3 py-2">
-                  <span className="flex items-center gap-2 text-[13px]">{sound ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />} Sound</span>
+                  <span className="flex items-center gap-2 text-[13px]">
+                    {sound ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}{" "}
+                    Sound
+                  </span>
                   <Switch checked={sound} onCheckedChange={setSound} aria-label="Toggle sound" />
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-primary-foreground/5 px-3 py-2">
-                  <span className="flex items-center gap-2 text-[13px]"><Flashlight className="h-4 w-4" /> Flash</span>
+                  <span className="flex items-center gap-2 text-[13px]">
+                    <Flashlight className="h-4 w-4" /> Flash
+                  </span>
                   <Switch checked={flash} onCheckedChange={setFlash} aria-label="Toggle flash" />
                 </div>
                 <Button
@@ -247,14 +421,20 @@ function ScanPage() {
                 >
                   <Camera className="h-4 w-4" /> Switch camera ({camera})
                 </Button>
-                <Button variant="destructive" className="h-9 gap-2" onClick={() => setCloseOpen(true)}>
+                <Button
+                  variant="destructive"
+                  className="h-9 gap-2"
+                  onClick={() => setCloseOpen(true)}
+                >
                   Close occasion
                 </Button>
               </div>
             </div>
 
             <div className="rounded-xl border border-primary-foreground/15 bg-primary-foreground/5 p-3">
-              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-primary-foreground/70">State simulator</p>
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-primary-foreground/70">
+                State simulator
+              </p>
               <div className="grid grid-cols-2 gap-1.5">
                 {STATE_ORDER.map((s) => (
                   <button
@@ -278,19 +458,30 @@ function ScanPage() {
               </p>
               <ul className="max-h-[360px] divide-y divide-primary-foreground/10 overflow-y-auto">
                 {history.length === 0 ? (
-                  <li className="px-3 py-6 text-center text-[12px] text-primary-foreground/50">No scans yet this session.</li>
-                ) : history.map((h) => (
-                  <li key={h.id} className="flex items-center gap-2 px-3 py-2">
-                    <LearnerAvatar name={h.learnerName} hue={h.photoHue} size={26} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[12.5px] font-medium">{h.learnerName}</p>
-                      <p className="truncate text-[11px] text-primary-foreground/60">{h.admissionNumber} · {h.time}</p>
-                    </div>
-                    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-medium", TONE_CLASSES[STATE_META[h.state].tone])}>
-                      {STATE_META[h.state].label}
-                    </span>
+                  <li className="px-3 py-6 text-center text-[12px] text-primary-foreground/50">
+                    No scans yet this session.
                   </li>
-                ))}
+                ) : (
+                  history.map((h) => (
+                    <li key={h.id} className="flex items-center gap-2 px-3 py-2">
+                      <LearnerAvatar name={h.learnerName} hue={h.photoHue} size={26} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[12.5px] font-medium">{h.learnerName}</p>
+                        <p className="truncate text-[11px] text-primary-foreground/60">
+                          {h.admissionNumber} · {h.time}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-medium",
+                          TONE_CLASSES[STATE_META[h.state].tone],
+                        )}
+                      >
+                        {STATE_META[h.state].label}
+                      </span>
+                    </li>
+                  ))
+                )}
               </ul>
             </div>
           </div>
@@ -302,8 +493,8 @@ function ScanPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Close {occasion?.name ?? "this occasion"}?</AlertDialogTitle>
             <AlertDialogDescription>
-              No further scans will be accepted for this occasion once closed. Any learners not yet scanned will be
-              marked unexplained pending reconciliation.
+              No further scans will be accepted for this occasion once closed. Any learners not yet
+              scanned will be marked unexplained pending reconciliation.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
