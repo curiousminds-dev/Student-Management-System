@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { attendanceService, deviceService, learnerService } from "@/services";
+import { BrowserQRCodeReader, type IScannerControls } from "@zxing/browser";
 import { cn } from "@/lib/utils";
 import { clearQueuedScans, queueScan, queuedScans } from "@/lib/offline-sync";
 import { USE_MOCK_DATA } from "@/services/api-client";
@@ -144,12 +145,17 @@ function ScanPage() {
   const [sound, setSound] = useState(true);
   const [flash, setFlash] = useState(false);
   const [camera, setCamera] = useState<"rear" | "front">("rear");
+  const [cameraActive, setCameraActive] = useState(false);
+  const [deviceSecret, setDeviceSecret] = useState("");
+  const [deviceAuthenticated, setDeviceAuthenticated] = useState(USE_MOCK_DATA);
   const [closeOpen, setCloseOpen] = useState(false);
   const [manualInput, setManualInput] = useState("");
   const [current, setCurrent] = useState<ScanResult | null>(null);
   const [history, setHistory] = useState<ScanResult[]>([]);
   const cycleRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const scannerControlsRef = useRef<IScannerControls | null>(null);
 
   useEffect(() => {
     if (occasionsQuery.data?.length && !occasionId) setOccasionId(occasionsQuery.data[0]!.id);
@@ -157,6 +163,9 @@ function ScanPage() {
   useEffect(() => {
     if (devicesQuery.data?.length && !deviceId) setDeviceId(devicesQuery.data[0]!.id);
   }, [devicesQuery.data, deviceId]);
+  useEffect(() => {
+    if (!USE_MOCK_DATA) setDeviceAuthenticated(false);
+  }, [deviceId]);
 
   const occasion = occasionsQuery.data?.find((o) => o.id === occasionId);
   const device = devicesQuery.data?.find((d) => d.id === deviceId);
@@ -197,8 +206,8 @@ function ScanPage() {
     showResult(learner, resultState);
   };
 
-  const handleManualSubmit = async () => {
-    if (!manualInput.trim()) return;
+  const processCredential = async (credential: string) => {
+    if (!credential.trim()) return;
     if (USE_MOCK_DATA) {
       triggerMockScan();
       setManualInput("");
@@ -208,8 +217,12 @@ function ScanPage() {
       toast.error("Select an occasion and device first");
       return;
     }
+    if (!deviceAuthenticated) {
+      toast.error("Authenticate this scanner device first");
+      return;
+    }
     const event = {
-      credential: manualInput.trim(),
+      credential: credential.trim(),
       occasionId,
       deviceId,
       clientEventId: crypto.randomUUID(),
@@ -219,7 +232,6 @@ function ScanPage() {
       setPendingSync(queueScan(event));
       const learner = learners[0];
       if (learner) showResult(learner, "offline_queued");
-      setManualInput("");
       return;
     }
     try {
@@ -243,8 +255,65 @@ function ScanPage() {
       setPendingSync(queuedScans().length);
       toast.warning("Network unavailable — scan queued safely");
     }
-    setManualInput("");
   };
+
+  const handleManualSubmit = async () => {
+    const value = manualInput;
+    setManualInput("");
+    await processCredential(value);
+  };
+
+  const authenticateSelectedDevice = async () => {
+    if (!device || !deviceSecret) {
+      toast.error("Enter the registered device secret");
+      return;
+    }
+    try {
+      await deviceService.authenticate(
+        (device as typeof device & { publicId?: string }).publicId ?? device.id,
+        deviceSecret,
+      );
+      setDeviceSecret("");
+      setDeviceAuthenticated(true);
+      toast.success("Scanner device authenticated");
+    } catch {
+      setDeviceAuthenticated(false);
+      toast.error("Device authentication failed");
+    }
+  };
+
+  // Scanner lifecycle intentionally restarts only when camera/session inputs change.
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (!cameraActive || !videoRef.current) {
+      scannerControlsRef.current?.stop();
+      scannerControlsRef.current = null;
+      return;
+    }
+    const reader = new BrowserQRCodeReader();
+    let cancelled = false;
+    void reader
+      .decodeFromConstraints(
+        { video: { facingMode: camera === "rear" ? { ideal: "environment" } : "user" } },
+        videoRef.current,
+        (result) => {
+          if (result && !cancelled) void processCredential(result.getText());
+        },
+      )
+      .then((controls) => {
+        scannerControlsRef.current = controls;
+      })
+      .catch(() => {
+        setCameraActive(false);
+        toast.error("Camera access failed. Check browser permission and HTTPS.");
+      });
+    return () => {
+      cancelled = true;
+      scannerControlsRef.current?.stop();
+      scannerControlsRef.current = null;
+    };
+  }, [cameraActive, camera, occasionId, deviceId, deviceAuthenticated, online]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
     if (!online || USE_MOCK_DATA || pendingSync === 0) return;
@@ -308,6 +377,27 @@ function ScanPage() {
             onChange={(e) => setStaffMember(e.target.value)}
             className="h-9 w-[160px] border-primary-foreground/20 bg-primary-foreground/10 text-[12.5px] text-primary-foreground placeholder:text-primary-foreground/60"
           />
+          {!USE_MOCK_DATA ? (
+            <>
+              <Input
+                aria-label="Device secret"
+                type="password"
+                placeholder={deviceAuthenticated ? "Device authenticated" : "Device secret"}
+                value={deviceSecret}
+                onChange={(e) => setDeviceSecret(e.target.value)}
+                disabled={deviceAuthenticated}
+                className="h-9 w-[150px] border-primary-foreground/20 bg-primary-foreground/10 text-[12.5px] text-primary-foreground"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => void authenticateSelectedDevice()}
+                disabled={deviceAuthenticated}
+              >
+                Authenticate device
+              </Button>
+            </>
+          ) : null}
           <div className="ml-auto flex items-center gap-3 text-[12px]">
             <span className="hidden text-primary-foreground/70 sm:inline">
               {device?.location ?? "Checkpoint"}
@@ -335,9 +425,24 @@ function ScanPage() {
           {/* Scanner viewport */}
           <div className="flex flex-col gap-4">
             <div className="relative flex min-h-[320px] flex-1 items-center justify-center overflow-hidden rounded-2xl border border-primary-foreground/15 bg-[oklch(0.18_0.03_255)]">
+              <video
+                ref={videoRef}
+                className={cn(
+                  "absolute inset-0 h-full w-full object-cover",
+                  cameraActive ? "block" : "hidden",
+                )}
+                muted
+                playsInline
+                aria-label="QR camera preview"
+              />
               <div className="pointer-events-none absolute inset-6 rounded-xl border-2 border-dashed border-primary-foreground/25" />
               <div className="scan-line pointer-events-none absolute inset-x-6 h-0.5 bg-cyan shadow-[0_0_16px_2px_var(--color-cyan)]" />
-              <div className="flex flex-col items-center gap-3 text-primary-foreground/70">
+              <div
+                className={cn(
+                  "flex flex-col items-center gap-3 text-primary-foreground/70",
+                  cameraActive && "hidden",
+                )}
+              >
                 <ScanLine className="h-14 w-14" />
                 <p className="text-[13px]">Position the learner's QR card within the frame</p>
               </div>
@@ -422,6 +527,13 @@ function ScanPage() {
                   <Camera className="h-4 w-4" /> Switch camera ({camera})
                 </Button>
                 <Button
+                  variant="secondary"
+                  className="h-9"
+                  onClick={() => setCameraActive((active) => !active)}
+                >
+                  {cameraActive ? "Stop QR camera" : "Start QR camera"}
+                </Button>
+                <Button
                   variant="destructive"
                   className="h-9 gap-2"
                   onClick={() => setCloseOpen(true)}
@@ -440,7 +552,7 @@ function ScanPage() {
                   <button
                     key={s}
                     type="button"
-                    onClick={() => triggerScan(s)}
+                    onClick={() => triggerMockScan(s)}
                     className={cn(
                       "rounded-md border px-2 py-1.5 text-left text-[11px] font-medium",
                       TONE_CLASSES[STATE_META[s].tone],

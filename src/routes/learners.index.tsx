@@ -2,8 +2,19 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
-  ArrowDownUp, Columns3, Download, Eye, IdCard, MessageCircle, PanelRightClose,
-  QrCode, RotateCcw, Search, Upload, UserPlus, X,
+  ArrowDownUp,
+  Columns3,
+  Download,
+  Eye,
+  IdCard,
+  MessageCircle,
+  PanelRightClose,
+  QrCode,
+  RotateCcw,
+  Search,
+  Upload,
+  UserPlus,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -15,12 +26,23 @@ import { TablePagination } from "@/components/common/TablePagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel,
-  DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { learnerService, type LearnerQuery } from "@/services";
 import { useAuth } from "@/lib/auth-context";
@@ -34,16 +56,27 @@ export const Route = createFileRoute("/learners/")({
       { title: "Learners — enrolment, QR cards and attendance" },
       {
         name: "description",
-        content: "Search, filter and review every enrolled learner with QR card status, attendance and guardian contact.",
+        content:
+          "Search, filter and review every enrolled learner with QR card status, attendance and guardian contact.",
       },
       { property: "og:title", content: "Learners — enrolment, QR cards and attendance" },
-      { property: "og:description", content: "Learner register with QR card status, attendance and guardian contact." },
+      {
+        property: "og:description",
+        content: "Learner register with QR card status, attendance and guardian contact.",
+      },
     ],
   }),
   component: LearnersPage,
 });
 
-const CLASS_OPTIONS = ["Senior One", "Senior Two", "Senior Three", "Senior Four", "Senior Five", "Senior Six"];
+const CLASS_OPTIONS = [
+  "Senior One",
+  "Senior Two",
+  "Senior Three",
+  "Senior Four",
+  "Senior Five",
+  "Senior Six",
+];
 const STREAM_OPTIONS = ["East", "West", "North", "South"];
 
 const ALL_COLUMNS = [
@@ -59,8 +92,13 @@ const ALL_COLUMNS = [
 type ColumnKey = (typeof ALL_COLUMNS)[number]["key"];
 
 const DEFAULT_FILTERS: LearnerQuery = {
-  search: "", className: "all", stream: "all", residence: "all",
-  gender: "all", status: "all", qrStatus: "all",
+  search: "",
+  className: "all",
+  stream: "all",
+  residence: "all",
+  gender: "all",
+  status: "all",
+  qrStatus: "all",
 };
 
 function LearnersPage() {
@@ -83,9 +121,10 @@ function LearnersPage() {
     placeholderData: keepPreviousData,
   });
 
-  const rows = query.data?.data ?? [];
+  const rows = useMemo(() => query.data?.data ?? [], [query.data?.data]);
   const selected = useMemo(() => rows.find((r) => r.id === selectedId) ?? null, [rows, selectedId]);
-  const visible = (key: ColumnKey) => !hidden.includes(key) && !(identityOnly && ["attendanceRate", "guardian"].includes(key));
+  const visible = (key: ColumnKey) =>
+    !hidden.includes(key) && !(identityOnly && ["attendanceRate", "guardian"].includes(key));
 
   const update = (patch: Partial<LearnerQuery>) => {
     setFilters((f) => ({ ...f, ...patch }));
@@ -107,14 +146,34 @@ function LearnersPage() {
       <PageHeader
         title="Learners"
         description={
-          query.isLoading ? "Loading the learner register…" : `${query.data?.total ?? 0} learners match the current filters.`
+          query.isLoading
+            ? "Loading the learner register…"
+            : `${query.data?.total ?? 0} learners match the current filters.`
         }
         actions={
           <>
-            <Button variant="outline" size="sm" className="h-8 text-[12px]" onClick={() => toast("Import learners", { description: "Upload a CSV file exported from your previous register." })}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-[12px]"
+              onClick={() =>
+                toast("Import learners", {
+                  description: "Upload a CSV file exported from your previous register.",
+                })
+              }
+            >
               <Upload className="h-3.5 w-3.5" /> Import CSV
             </Button>
-            <Button variant="outline" size="sm" className="h-8 text-[12px]" onClick={() => toast.success("Export started", { description: "The learner register CSV will download shortly." })}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-[12px]"
+              onClick={() =>
+                toast.success("Export started", {
+                  description: "The learner register CSV will download shortly.",
+                })
+              }
+            >
               <Download className="h-3.5 w-3.5" /> Export CSV
             </Button>
             {can("learners.manage") ? (
@@ -130,8 +189,8 @@ function LearnersPage() {
 
       {identityOnly ? (
         <SensitiveNotice className="mb-3">
-          Your role shows learner identity only. Attendance percentages, guardian contacts and welfare information are
-          hidden.
+          Your role shows learner identity only. Attendance percentages, guardian contacts and
+          welfare information are hidden.
         </SensitiveNotice>
       ) : null}
 
@@ -154,11 +213,26 @@ function LearnersPage() {
               { label: "Stream", key: "stream" as const, options: STREAM_OPTIONS },
               { label: "Residence", key: "residence" as const, options: ["Day", "Boarding"] },
               { label: "Gender", key: "gender" as const, options: ["Female", "Male"] },
-              { label: "Status", key: "status" as const, options: ["active", "inactive", "transferred"] },
-              { label: "QR card", key: "qrStatus" as const, options: ["active", "revoked", "not_issued"] },
+              {
+                label: "Status",
+                key: "status" as const,
+                options: ["active", "inactive", "transferred"],
+              },
+              {
+                label: "QR card",
+                key: "qrStatus" as const,
+                options: ["active", "revoked", "not_issued"],
+              },
             ].map((f) => (
-              <Select key={f.key} value={(filters[f.key] as string) ?? "all"} onValueChange={(v) => update({ [f.key]: v })}>
-                <SelectTrigger className="h-8 w-auto min-w-[110px] text-[12px]" aria-label={f.label}>
+              <Select
+                key={f.key}
+                value={(filters[f.key] as string) ?? "all"}
+                onValueChange={(v) => update({ [f.key]: v })}
+              >
+                <SelectTrigger
+                  className="h-8 w-auto min-w-[110px] text-[12px]"
+                  aria-label={f.label}
+                >
                   <SelectValue placeholder={f.label} />
                 </SelectTrigger>
                 <SelectContent>
@@ -171,7 +245,15 @@ function LearnersPage() {
                 </SelectContent>
               </Select>
             ))}
-            <Button variant="ghost" size="sm" className="h-8 text-[12px]" onClick={() => { setFilters(DEFAULT_FILTERS); setPage(1); }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-[12px]"
+              onClick={() => {
+                setFilters(DEFAULT_FILTERS);
+                setPage(1);
+              }}
+            >
               <RotateCcw className="h-3.5 w-3.5" /> Reset
             </Button>
             <DropdownMenu>
@@ -194,7 +276,10 @@ function LearnersPage() {
                   </DropdownMenuCheckboxItem>
                 ))}
                 <DropdownMenuLabel className="text-[12px]">Density</DropdownMenuLabel>
-                <DropdownMenuRadioGroup value={density} onValueChange={(v) => setDensity(v as "compact" | "comfortable")}>
+                <DropdownMenuRadioGroup
+                  value={density}
+                  onValueChange={(v) => setDensity(v as "compact" | "comfortable")}
+                >
                   <DropdownMenuRadioItem value="compact">Compact</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="comfortable">Comfortable</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
@@ -226,16 +311,36 @@ function LearnersPage() {
                       <th className="w-9 px-3 py-2">
                         <Checkbox aria-label="Select all learners on this page" />
                       </th>
-                      <SortableHeader label="Student" active={sortBy === "fullName"} dir={sortDir} onClick={() => toggleSort("fullName")} />
-                      <SortableHeader label="Admission no." active={sortBy === "admissionNumber"} dir={sortDir} onClick={() => toggleSort("admissionNumber")} />
+                      <SortableHeader
+                        label="Student"
+                        active={sortBy === "fullName"}
+                        dir={sortDir}
+                        onClick={() => toggleSort("fullName")}
+                      />
+                      <SortableHeader
+                        label="Admission no."
+                        active={sortBy === "admissionNumber"}
+                        dir={sortDir}
+                        onClick={() => toggleSort("admissionNumber")}
+                      />
                       {visible("lin") ? <Th>LIN</Th> : null}
-                      <SortableHeader label="Class" active={sortBy === "className"} dir={sortDir} onClick={() => toggleSort("className")} />
+                      <SortableHeader
+                        label="Class"
+                        active={sortBy === "className"}
+                        dir={sortDir}
+                        onClick={() => toggleSort("className")}
+                      />
                       {visible("stream") ? <Th>Stream</Th> : null}
                       {visible("gender") ? <Th>Gender</Th> : null}
                       {visible("residence") ? <Th>Day/boarding</Th> : null}
                       {visible("todayStatus") ? <Th>Today</Th> : null}
                       {visible("attendanceRate") ? (
-                        <SortableHeader label="Attendance" active={sortBy === "attendanceRate"} dir={sortDir} onClick={() => toggleSort("attendanceRate")} />
+                        <SortableHeader
+                          label="Attendance"
+                          active={sortBy === "attendanceRate"}
+                          dir={sortDir}
+                          onClick={() => toggleSort("attendanceRate")}
+                        />
                       ) : null}
                       {visible("qrStatus") ? <Th>QR card</Th> : null}
                       {visible("guardian") ? <Th>Guardian contact</Th> : null}
@@ -249,7 +354,10 @@ function LearnersPage() {
                         <tr
                           key={l.id}
                           tabIndex={0}
-                          onClick={() => { setSelectedId(l.id); setPanelOpen(true); }}
+                          onClick={() => {
+                            setSelectedId(l.id);
+                            setPanelOpen(true);
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
@@ -268,25 +376,47 @@ function LearnersPage() {
                           </td>
                           <td className={cn("px-3", cellPad)}>
                             <div className="flex min-w-0 items-center gap-2.5">
-                              <LearnerAvatar name={l.fullName} hue={l.photoHue} size={30} ring={isSelected} />
+                              <LearnerAvatar
+                                name={l.fullName}
+                                hue={l.photoHue}
+                                size={30}
+                                ring={isSelected}
+                              />
                               <div className="min-w-0">
                                 <p className="truncate font-medium">{l.fullName}</p>
-                                <p className={cn("truncate text-[11px]", isSelected ? "text-white/80" : "text-muted-foreground")}>
+                                <p
+                                  className={cn(
+                                    "truncate text-[11px]",
+                                    isSelected ? "text-white/80" : "text-muted-foreground",
+                                  )}
+                                >
                                   {l.admissionNumber}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className={cn("px-3 whitespace-nowrap", cellPad)}>{l.admissionNumber}</td>
-                          {visible("lin") ? <td className={cn("px-3 whitespace-nowrap", cellPad)}>{l.lin}</td> : null}
+                          <td className={cn("px-3 whitespace-nowrap", cellPad)}>
+                            {l.admissionNumber}
+                          </td>
+                          {visible("lin") ? (
+                            <td className={cn("px-3 whitespace-nowrap", cellPad)}>{l.lin}</td>
+                          ) : null}
                           <td className={cn("px-3 whitespace-nowrap", cellPad)}>{l.className}</td>
-                          {visible("stream") ? <td className={cn("px-3", cellPad)}>{l.stream}</td> : null}
-                          {visible("gender") ? <td className={cn("px-3", cellPad)}>{l.gender}</td> : null}
-                          {visible("residence") ? <td className={cn("px-3", cellPad)}>{l.residence}</td> : null}
+                          {visible("stream") ? (
+                            <td className={cn("px-3", cellPad)}>{l.stream}</td>
+                          ) : null}
+                          {visible("gender") ? (
+                            <td className={cn("px-3", cellPad)}>{l.gender}</td>
+                          ) : null}
+                          {visible("residence") ? (
+                            <td className={cn("px-3", cellPad)}>{l.residence}</td>
+                          ) : null}
                           {visible("todayStatus") ? (
                             <td className={cn("px-3", cellPad)}>
                               {isSelected ? (
-                                <span className="text-[11px] font-medium capitalize">{l.todayStatus}</span>
+                                <span className="text-[11px] font-medium capitalize">
+                                  {l.todayStatus}
+                                </span>
                               ) : (
                                 <StatusBadge status={l.todayStatus} />
                               )}
@@ -295,7 +425,10 @@ function LearnersPage() {
                           {visible("attendanceRate") ? (
                             <td className={cn("px-3", cellPad)}>
                               <div className="flex items-center gap-2">
-                                <Progress value={l.attendanceRate} className={cn("h-1.5 w-14", isSelected && "bg-white/30")} />
+                                <Progress
+                                  value={l.attendanceRate}
+                                  className={cn("h-1.5 w-14", isSelected && "bg-white/30")}
+                                />
                                 <span className="text-[11px]">{l.attendanceRate}%</span>
                               </div>
                             </td>
@@ -303,7 +436,9 @@ function LearnersPage() {
                           {visible("qrStatus") ? (
                             <td className={cn("px-3", cellPad)}>
                               {isSelected ? (
-                                <span className="text-[11px] font-medium capitalize">{l.qrStatus.replace("_", " ")}</span>
+                                <span className="text-[11px] font-medium capitalize">
+                                  {l.qrStatus.replace("_", " ")}
+                                </span>
                               ) : (
                                 <StatusBadge status={l.qrStatus} />
                               )}
@@ -312,14 +447,34 @@ function LearnersPage() {
                           {visible("guardian") ? (
                             <td className={cn("px-3 whitespace-nowrap", cellPad)}>
                               <p className="truncate">{l.guardian.name}</p>
-                              <p className={cn("text-[11px]", isSelected ? "text-white/80" : "text-muted-foreground")}>
+                              <p
+                                className={cn(
+                                  "text-[11px]",
+                                  isSelected ? "text-white/80" : "text-muted-foreground",
+                                )}
+                              >
                                 {l.guardian.phone}
                               </p>
                             </td>
                           ) : null}
-                          <td className={cn("px-3 text-right whitespace-nowrap", cellPad)} onClick={(e) => e.stopPropagation()}>
-                            <Button asChild variant="ghost" size="icon" className={cn("h-7 w-7", isSelected && "text-white hover:bg-white/20")}>
-                              <Link to="/learners/$id" params={{ id: l.id }} aria-label={`Open ${l.fullName}'s profile`}>
+                          <td
+                            className={cn("px-3 text-right whitespace-nowrap", cellPad)}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button
+                              asChild
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                "h-7 w-7",
+                                isSelected && "text-white hover:bg-white/20",
+                              )}
+                            >
+                              <Link
+                                to="/learners/$id"
+                                params={{ id: l.id }}
+                                aria-label={`Open ${l.fullName}'s profile`}
+                              >
                                 <Eye className="h-3.5 w-3.5" />
                               </Link>
                             </Button>
@@ -344,10 +499,19 @@ function LearnersPage() {
         <aside className="hidden xl:block">
           {panelOpen ? (
             <div className="sticky top-[72px]">
-              <LearnerPanel learner={selected} identityOnly={identityOnly} onClose={() => setPanelOpen(false)} />
+              <LearnerPanel
+                learner={selected}
+                identityOnly={identityOnly}
+                onClose={() => setPanelOpen(false)}
+              />
             </div>
           ) : (
-            <Button variant="outline" size="sm" className="h-8 text-[12px]" onClick={() => setPanelOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-[12px]"
+              onClick={() => setPanelOpen(true)}
+            >
               <PanelRightClose className="h-3.5 w-3.5 rotate-180" /> Show details panel
             </Button>
           )}
@@ -358,7 +522,12 @@ function LearnersPage() {
       <Sheet open={!isWide && !!selected && panelOpen} onOpenChange={(o) => setPanelOpen(o)}>
         <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-md">
           <SheetTitle className="sr-only">Learner details</SheetTitle>
-          <LearnerPanel learner={selected} identityOnly={identityOnly} onClose={() => setPanelOpen(false)} embedded />
+          <LearnerPanel
+            learner={selected}
+            identityOnly={identityOnly}
+            onClose={() => setPanelOpen(false)}
+            embedded
+          />
         </SheetContent>
       </Sheet>
     </AppShell>
@@ -367,13 +536,28 @@ function LearnersPage() {
 
 function Th({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <th className={cn("px-3 py-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase", className)}>
+    <th
+      className={cn(
+        "px-3 py-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+        className,
+      )}
+    >
       {children}
     </th>
   );
 }
 
-function SortableHeader({ label, active, dir, onClick }: { label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void }) {
+function SortableHeader({
+  label,
+  active,
+  dir,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  dir: "asc" | "desc";
+  onClick: () => void;
+}) {
   return (
     <th className="px-3 py-2">
       <button
@@ -428,10 +612,18 @@ function LearnerPanel({
   return (
     <div className={cn("overflow-hidden", !embedded && "surface-card")}>
       <div className="relative border-b border-border px-4 pt-6 pb-4 text-center">
-        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" aria-label="Close details panel" onClick={onClose}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-7 w-7"
+          aria-label="Close details panel"
+          onClick={onClose}
+        >
           <X className="h-3.5 w-3.5" />
         </Button>
-        <p className="text-[11px] font-medium tracking-wide text-muted-foreground">{learner.admissionNumber}</p>
+        <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
+          {learner.admissionNumber}
+        </p>
         <div className="mt-3 flex justify-center">
           <LearnerAvatar name={learner.fullName} hue={learner.photoHue} size={96} />
         </div>
@@ -440,13 +632,31 @@ function LearnerPanel({
           {learner.className} {learner.stream} · {learner.residence}
         </p>
         <div className="mt-3 flex justify-center gap-1.5">
-          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Contact guardian" onClick={() => toast.success(`Calling ${learner.guardian.phone}`)}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Contact guardian"
+            onClick={() => toast.success(`Calling ${learner.guardian.phone}`)}
+          >
             <MessageCircle className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="View QR card" onClick={() => toast("QR card", { description: `Serial ${learner.qrSerial}` })}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="View QR card"
+            onClick={() => toast("QR card", { description: `Serial ${learner.qrSerial}` })}
+          >
             <QrCode className="h-3.5 w-3.5" />
           </Button>
-          <Button asChild variant="outline" size="icon" className="h-8 w-8" aria-label="Open full profile">
+          <Button
+            asChild
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Open full profile"
+          >
             <Link to="/learners/$id" params={{ id: learner.id }}>
               <Eye className="h-3.5 w-3.5" />
             </Link>
@@ -455,7 +665,9 @@ function LearnerPanel({
       </div>
 
       <div className="px-4 py-3">
-        <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">About</p>
+        <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+          About
+        </p>
         <dl className="grid grid-cols-2 gap-y-2.5">
           {facts.map(([k, v]) => (
             <div key={k}>
@@ -475,7 +687,9 @@ function LearnerPanel({
       ) : (
         <>
           <div className="border-t border-border px-4 py-3">
-            <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Attendance</p>
+            <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              Attendance
+            </p>
             <div className="flex items-center gap-2">
               <Progress value={learner.attendanceRate} className="h-1.5 flex-1" />
               <span className="text-[12px] font-semibold">{learner.attendanceRate}%</span>
@@ -484,7 +698,9 @@ function LearnerPanel({
           </div>
 
           <div className="border-t border-border px-4 py-3">
-            <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Guardian</p>
+            <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              Guardian
+            </p>
             <p className="text-[12.5px] font-medium">{learner.guardian.name}</p>
             <p className="text-[11px] text-muted-foreground">
               {learner.guardian.relationship} · {learner.guardian.phone}
@@ -496,7 +712,9 @@ function LearnerPanel({
           </div>
 
           <div className="border-t border-border px-4 py-3">
-            <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Quick actions</p>
+            <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              Quick actions
+            </p>
             <div className="grid grid-cols-2 gap-1.5">
               {[
                 ["Record attendance", "/attendance"],
@@ -504,7 +722,13 @@ function LearnerPanel({
                 ["Authorise absence", "/welfare"],
                 ["Full profile", `/learners/${learner.id}`],
               ].map(([label, to]) => (
-                <Button key={label} asChild variant="outline" size="sm" className="h-8 justify-start text-[12px]">
+                <Button
+                  key={label}
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 justify-start text-[12px]"
+                >
                   <Link to={to as string}>{label}</Link>
                 </Button>
               ))}

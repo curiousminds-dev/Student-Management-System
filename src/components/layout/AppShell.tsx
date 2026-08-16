@@ -49,7 +49,11 @@ export function AppShell({
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[240px] border-0 bg-sidebar p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <Sidebar collapsed={false} onToggle={() => setMobileOpen(false)} onNavigate={() => setMobileOpen(false)} />
+          <Sidebar
+            collapsed={false}
+            onToggle={() => setMobileOpen(false)}
+            onNavigate={() => setMobileOpen(false)}
+          />
         </SheetContent>
       </Sheet>
 

@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sapwms
+      POSTGRES_USER: sapwms
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U sapwms -d sapwms"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    env_file: [.env.production]
+    environment:
+      DATABASE_URL: postgresql://sapwms@postgres:5432/sapwms
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      MFA_ENCRYPTION_KEY_FILE: /run/secrets/mfa_key
+    secrets: [jwt_secret, mfa_key]
+    ports: ["3001:3001"]
+    healthcheck:
+      test: [CMD, curl, -f, "http://localhost:3001/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+secrets:
+  postgres_password: { file: ./secrets/postgres_password }
+  jwt_secret: { file: ./secrets/jwt_secret }
+  mfa_key: { file: ./secrets/mfa_key }
+volumes:
+  postgres_data:

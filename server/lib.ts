@@ -3,11 +3,10 @@ import { createHash, randomBytes } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 import type { FastifyRequest } from "fastify";
 import { PrismaClient } from "@prisma/client";
+import { env } from "./env.js";
 
 export const prisma = new PrismaClient();
-const secret = new TextEncoder().encode(
-  process.env["JWT_SECRET"] ?? "development-only-secret-change-me-32",
-);
+const secret = new TextEncoder().encode(env.JWT_SECRET);
 
 export type SessionUser = {
   id: string;
@@ -15,6 +14,7 @@ export type SessionUser = {
   campusId: string | null;
   role: string;
   email: string;
+  sessionId?: string;
 };
 
 declare module "fastify" {
@@ -37,7 +37,12 @@ export async function authenticate(request: FastifyRequest): Promise<SessionUser
   if (!token) throw Object.assign(new Error("Authentication required"), { statusCode: 401 });
   try {
     const { payload } = await jwtVerify(token, secret);
-    const user = payload as unknown as SessionUser;
+    if (payload.type !== "access" || typeof payload.sid !== "string")
+      throw new Error("Wrong token type");
+    const session = await prisma.session.findUnique({ where: { id: payload.sid } });
+    if (!session || session.revokedAt || session.expiresAt <= new Date())
+      throw new Error("Revoked session");
+    const user = { ...(payload as unknown as SessionUser), sessionId: payload.sid };
     request.sessionUser = user;
     return user;
   } catch {
@@ -50,7 +55,7 @@ export function hashCredential(value: string): string {
 }
 
 export function newCredential(): string {
-  return `NCS-${randomBytes(18).toString("base64url")}`;
+  return `NCS-${randomBytes(32).toString("base64url")}`;
 }
 
 export async function audit(

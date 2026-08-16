@@ -105,12 +105,7 @@ export interface Staff {
 }
 
 export type LearnerClass =
-  | "Senior One"
-  | "Senior Two"
-  | "Senior Three"
-  | "Senior Four"
-  | "Senior Five"
-  | "Senior Six";
+  "Senior One" | "Senior Two" | "Senior Three" | "Senior Four" | "Senior Five" | "Senior Six";
 
 export type AttendanceStatus = "present" | "late" | "excused" | "unexplained" | "pending";
 
@@ -441,7 +436,8 @@ export interface Paginated<T> {
   pageSize: number;
 }
 
-export type CompetencyLevel = "Exceeding expectation" | "Meeting expectation" | "Approaching expectation" | "Below expectation";
+export type CompetencyLevel =
+  "Exceeding expectation" | "Meeting expectation" | "Approaching expectation" | "Below expectation";
 
 export interface GradeBoundary {
   id: UUID;

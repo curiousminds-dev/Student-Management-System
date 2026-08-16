@@ -4,7 +4,32 @@
  */
 export const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "";
 export const USE_MOCK_DATA = (import.meta.env["VITE_USE_MOCK_DATA"] ?? "true") !== "false";
-export const TOKEN_STORAGE_KEY = "ncs.access_token";
+let accessToken: string | null = null;
+let refreshPromise: Promise<string | null> | null = null;
+
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const payload = (await response.json()) as { token: string };
+        accessToken = payload.token;
+        return payload.token;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -23,21 +48,22 @@ export function mock<T>(value: T | (() => T), delay = LATENCY): Promise<T> {
   });
 }
 
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token =
-    typeof window === "undefined" ? null : window.localStorage.getItem(TOKEN_STORAGE_KEY);
+export async function request<T>(path: string, init?: RequestInit, retried = false): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init?.headers ?? {}),
     },
     ...init,
   });
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    if (response.status === 401 && typeof window !== "undefined")
-      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    if (response.status === 401 && !retried && !path.startsWith("/auth/")) {
+      const token = await refreshAccessToken();
+      if (token) return request<T>(path, init, true);
+    }
     throw new ApiError(payload?.error ?? `Request to ${path} failed`, response.status);
   }
   return (await response.json()) as T;

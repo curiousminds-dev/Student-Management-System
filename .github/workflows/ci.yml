@@ -10,9 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      DATABASE_URL: file:/tmp/student-management-ci.db
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sapwms_test
       JWT_SECRET: ci-only-secret-that-is-at-least-32-characters
+      MFA_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      WEB_ORIGIN: http://localhost:3000
       NODE_ENV: test
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: sapwms_test }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sapwms_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,7 +36,36 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npm run db:seed
       - run: npm test
-      # The inherited Lovable frontend has legacy formatting debt; enforce all
-      # newly added backend and integration paths while that debt is reduced.
-      - run: npm run lint:ci
+      - run: npm run lint
       - run: npm run build
+      - run: npm run security:audit
+
+  zap-baseline:
+    runs-on: ubuntu-latest
+    needs: verify
+    permissions: { contents: read, issues: write }
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: sapwms_zap }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sapwms_zap
+      JWT_SECRET: ci-only-secret-that-is-at-least-32-characters
+      MFA_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      WEB_ORIGIN: http://localhost:3000
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run db:generate && npm run db:migrate && npm run db:seed
+      - run: npm run api:start > /tmp/api.log 2>&1 &
+      - run: for i in $(seq 1 30); do curl -fsS http://localhost:3001/health/ready && exit 0; sleep 2; done; exit 1
+      - uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:3001
+          fail_action: true
+          rules_file_name: .zap-rules.tsv

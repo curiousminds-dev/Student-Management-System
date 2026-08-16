@@ -40,21 +40,96 @@ function pad(n: number, len = 3) {
 }
 
 const FIRST_F = [
-  "Amina","Sarah","Faith","Lydia","Prossy","Ritah","Doreen","Joan","Patricia","Sylvia","Betty","Harriet","Immaculate","Sandra","Winnie","Esther","Cathy","Brenda","Justine","Shamim",
+  "Amina",
+  "Sarah",
+  "Faith",
+  "Lydia",
+  "Prossy",
+  "Ritah",
+  "Doreen",
+  "Joan",
+  "Patricia",
+  "Sylvia",
+  "Betty",
+  "Harriet",
+  "Immaculate",
+  "Sandra",
+  "Winnie",
+  "Esther",
+  "Cathy",
+  "Brenda",
+  "Justine",
+  "Shamim",
 ];
 const FIRST_M = [
-  "Daniel","Joshua","Brian","Moses","Emmanuel","Isaac","Peter","Ivan","Timothy","Andrew","Ronald","Denis","Arnold","Herbert","Julius","Enock","Godfrey","Simon","Allan","Solomon",
+  "Daniel",
+  "Joshua",
+  "Brian",
+  "Moses",
+  "Emmanuel",
+  "Isaac",
+  "Peter",
+  "Ivan",
+  "Timothy",
+  "Andrew",
+  "Ronald",
+  "Denis",
+  "Arnold",
+  "Herbert",
+  "Julius",
+  "Enock",
+  "Godfrey",
+  "Simon",
+  "Allan",
+  "Solomon",
 ];
 const LAST = [
-  "Nansubuga","Okello","Namusoke","Kato","Atim","Ssemanda","Nabirye","Ochieng","Mugisha","Nakato","Wasswa","Kirabo","Tumusiime","Aturinda","Nalwoga","Byaruhanga","Alupo","Kigongo","Namutebi","Ssebugwawo","Achieng","Kyomuhendo","Odongo","Nakamya","Muhwezi",
+  "Nansubuga",
+  "Okello",
+  "Namusoke",
+  "Kato",
+  "Atim",
+  "Ssemanda",
+  "Nabirye",
+  "Ochieng",
+  "Mugisha",
+  "Nakato",
+  "Wasswa",
+  "Kirabo",
+  "Tumusiime",
+  "Aturinda",
+  "Nalwoga",
+  "Byaruhanga",
+  "Alupo",
+  "Kigongo",
+  "Namutebi",
+  "Ssebugwawo",
+  "Achieng",
+  "Kyomuhendo",
+  "Odongo",
+  "Nakamya",
+  "Muhwezi",
 ];
 const CLASSES: LearnerClass[] = [
-  "Senior One","Senior Two","Senior Three","Senior Four","Senior Five","Senior Six",
+  "Senior One",
+  "Senior Two",
+  "Senior Three",
+  "Senior Four",
+  "Senior Five",
+  "Senior Six",
 ];
 const STREAMS = ["East", "West", "North", "South"];
 const HOUSES = ["Nile", "Rwenzori", "Elgon", "Kagera"];
 const DORMS = ["Kabalega", "Mutesa", "Nakayima", "Kintu", null];
-const STATUSES: AttendanceStatus[] = ["present", "present", "present", "present", "late", "excused", "unexplained"];
+const STATUSES: AttendanceStatus[] = [
+  "present",
+  "present",
+  "present",
+  "present",
+  "late",
+  "excused",
+  "unexplained",
+];
 
 export const SCHOOL: School = {
   id: "sch-1",
@@ -71,9 +146,30 @@ export const SCHOOL: School = {
 };
 
 export const TERMS: Term[] = [
-  { id: "t1", name: "Term One", year: 2026, startDate: "2026-02-02", endDate: "2026-05-01", active: false },
-  { id: "t2", name: "Term Two", year: 2026, startDate: "2026-05-25", endDate: "2026-08-21", active: true },
-  { id: "t3", name: "Term Three", year: 2026, startDate: "2026-09-14", endDate: "2026-12-04", active: false },
+  {
+    id: "t1",
+    name: "Term One",
+    year: 2026,
+    startDate: "2026-02-02",
+    endDate: "2026-05-01",
+    active: false,
+  },
+  {
+    id: "t2",
+    name: "Term Two",
+    year: 2026,
+    startDate: "2026-05-25",
+    endDate: "2026-08-21",
+    active: true,
+  },
+  {
+    id: "t3",
+    name: "Term Three",
+    year: 2026,
+    startDate: "2026-09-14",
+    endDate: "2026-12-04",
+    active: false,
+  },
 ];
 
 function phone() {
@@ -97,7 +193,8 @@ function makeLearner(i: number): Learner {
     fullName: `${first} ${last}`,
     admissionNumber: `NC/${2020 + int(0, 6)}/${pad(1000 + i, 4)}`,
     lin: `U${int(10000000, 99999999)}`,
-    unebNumber: className === "Senior Four" || className === "Senior Six" ? `U0231/${pad(i, 3)}` : undefined,
+    unebNumber:
+      className === "Senior Four" || className === "Senior Six" ? `U0231/${pad(i, 3)}` : undefined,
     className,
     stream: pick(STREAMS),
     gender,
@@ -154,7 +251,11 @@ export const STAFF: Staff[] = [
   assignedClasses: classes as string[],
   assignedDeviceId: device ? `dev-${i}` : null,
   assignedDeviceName: (device as string | null) ?? null,
-  accountStatus: (i === 10 ? "invited" : i === 5 ? "suspended" : "active") as Staff["accountStatus"],
+  accountStatus: (i === 10
+    ? "invited"
+    : i === 5
+      ? "suspended"
+      : "active") as Staff["accountStatus"],
   lastLogin: i === 10 ? null : `2026-08-0${int(1, 3)} 0${int(6, 9)}:${pad(int(10, 59), 2)}`,
   phone: phone(),
   email: `${(name as string).split(" ")[0]!.toLowerCase()}@nilecrest.ac.ug`,
@@ -167,7 +268,14 @@ export const DEVICES: Device[] = [
   ["Assembly Scanner 02", "Tablet", "Brian Ssemanda", "Assembly Ground", "pending", "online"],
   ["Boys' Dormitory Phone", "Phone", "Ivan Mugisha", "Boys' Dormitory", "failed", "offline"],
   ["Girls' Dormitory Phone", "Phone", "Lydia Nabirye", "Girls' Dormitory", "synced", "online"],
-  ["School Bus 03 Tablet", "Tablet", "Daniel Okello", "Route: Ntinda – Kireka", "conflict", "offline"],
+  [
+    "School Bus 03 Tablet",
+    "Tablet",
+    "Daniel Okello",
+    "Route: Ntinda – Kireka",
+    "conflict",
+    "offline",
+  ],
   ["Sick Bay Laptop", "Laptop", "Faith Atim", "Sick Bay", "syncing", "online"],
   ["Dining Hall Scanner", "USB scanner", "Sarah Namusoke", "Dining Hall", "disabled", "offline"],
 ].map(([name, type, user, location, status, connection], i) => ({
@@ -177,7 +285,12 @@ export const DEVICES: Device[] = [
   assignedUser: user as string,
   location: location as string,
   status: status as Device["status"],
-  lastSync: status === "synced" ? "3 minutes ago" : status === "syncing" ? "Now" : `${int(2, 26)} hours ago`,
+  lastSync:
+    status === "synced"
+      ? "3 minutes ago"
+      : status === "syncing"
+        ? "Now"
+        : `${int(2, 26)} hours ago`,
   pendingRecords: status === "synced" ? 0 : int(4, 96),
   failedRecords: status === "failed" ? int(3, 18) : 0,
   conflicts: status === "conflict" ? int(1, 6) : 0,
@@ -193,7 +306,11 @@ export const SYNC_HISTORY: SyncRecord[] = DEVICES.flatMap((d, i) =>
     deviceName: d.name,
     at: `2026-08-0${3 - j} 0${int(6, 9)}:${pad(int(10, 59), 2)}`,
     records: int(10, 220),
-    result: (j === 1 && d.status === "failed" ? "failed" : j === 2 ? "partial" : "success") as SyncRecord["result"],
+    result: (j === 1 && d.status === "failed"
+      ? "failed"
+      : j === 2
+        ? "partial"
+        : "success") as SyncRecord["result"],
     detail:
       j === 1 && d.status === "failed"
         ? "Upload interrupted — connection lost mid-batch"
@@ -204,14 +321,42 @@ export const SYNC_HISTORY: SyncRecord[] = DEVICES.flatMap((d, i) =>
 const OCCASION_DEFS: [string, AttendanceOccasion["category"], string, string, string, string][] = [
   ["Main gate entry", "Gate entry", "06:30", "08:00", "Moses Ochieng", "Main Gate"],
   ["Morning assembly", "Morning assembly", "07:40", "08:10", "Samuel Wamala", "Assembly Ground"],
-  ["Senior Four physics lesson", "Class lesson", "08:20", "09:40", "Brian Ssemanda", "Laboratory 2"],
-  ["Mid-term examination — Mathematics", "Examination", "09:00", "11:00", "Esther Akello", "Main Hall"],
+  [
+    "Senior Four physics lesson",
+    "Class lesson",
+    "08:20",
+    "09:40",
+    "Brian Ssemanda",
+    "Laboratory 2",
+  ],
+  [
+    "Mid-term examination — Mathematics",
+    "Examination",
+    "09:00",
+    "11:00",
+    "Esther Akello",
+    "Main Hall",
+  ],
   ["Lunch service", "Dining", "12:40", "13:40", "Sarah Namusoke", "Dining Hall"],
   ["Sick bay attendance", "Sick bay", "08:00", "17:00", "Faith Atim", "Sick Bay"],
   ["Afternoon sports", "Sports", "16:00", "17:30", "Joshua Kato", "Playground"],
   ["Evening prep", "Evening prep", "19:00", "21:30", "Amina Nansubuga", "Classroom Block B"],
-  ["Girls' dormitory roll call", "Dormitory roll call", "21:45", "22:15", "Lydia Nabirye", "Girls' Dormitory"],
-  ["Boys' dormitory roll call", "Dormitory roll call", "21:45", "22:15", "Ivan Mugisha", "Boys' Dormitory"],
+  [
+    "Girls' dormitory roll call",
+    "Dormitory roll call",
+    "21:45",
+    "22:15",
+    "Lydia Nabirye",
+    "Girls' Dormitory",
+  ],
+  [
+    "Boys' dormitory roll call",
+    "Dormitory roll call",
+    "21:45",
+    "22:15",
+    "Ivan Mugisha",
+    "Boys' Dormitory",
+  ],
   ["Bus route 03 boarding", "Transport", "17:00", "17:45", "Daniel Okello", "Bus Bay"],
   ["Main gate exit", "Gate exit", "16:30", "18:00", "Moses Ochieng", "Main Gate"],
   ["Morning prep", "Morning prep", "05:30", "06:45", "Ivan Mugisha", "Classroom Block A"],
@@ -225,7 +370,17 @@ export const OCCASIONS: AttendanceOccasion[] = OCCASION_DEFS.map(
   ([name, category, startTime, endTime, staff, location], i) => {
     const expected = int(80, 620);
     const status: AttendanceOccasion["status"] =
-      i < 2 ? "closed" : i < 5 ? "active" : i === 5 ? "paused" : i < 10 ? "scheduled" : i < 13 ? "reconciled" : "closed";
+      i < 2
+        ? "closed"
+        : i < 5
+          ? "active"
+          : i === 5
+            ? "paused"
+            : i < 10
+              ? "scheduled"
+              : i < 13
+                ? "reconciled"
+                : "closed";
     return {
       id: `occ-${pad(i + 1)}`,
       name,
@@ -255,10 +410,14 @@ export const ATTENDANCE_RECORDS: AttendanceRecord[] = LEARNERS.slice(0, 160).map
     occasionId: occ.id,
     occasionName: occ.name,
     status,
-    scanTime: status === "unexplained" || status === "excused" ? null : `0${int(6, 9)}:${pad(int(10, 59), 2)}`,
+    scanTime:
+      status === "unexplained" || status === "excused"
+        ? null
+        : `0${int(6, 9)}:${pad(int(10, 59), 2)}`,
     deviceName: status === "unexplained" ? null : pick(DEVICES).name,
     recordedBy: occ.responsibleStaff,
-    reconciliation: status === "unexplained" ? "pending" : status === "excused" ? "reconciled" : "not_required",
+    reconciliation:
+      status === "unexplained" ? "pending" : status === "excused" ? "reconciled" : "not_required",
     date: "2026-08-03",
     photoHue: l.photoHue,
   };
@@ -277,7 +436,8 @@ export const SCANS: ScanEvent[] = LEARNERS.slice(0, 40).map((l, i) => ({
   deviceId: DEVICES[0]!.id,
   deviceName: DEVICES[0]!.name,
   recordedBy: "Moses Ochieng",
-  outcome: i % 13 === 0 ? "duplicate" : i % 9 === 0 ? "late" : i % 17 === 0 ? "revoked_card" : "accepted",
+  outcome:
+    i % 13 === 0 ? "duplicate" : i % 9 === 0 ? "late" : i % 17 === 0 ? "revoked_card" : "accepted",
 }));
 
 export const AUTHORIZED_ABSENCES: AuthorizedAbsence[] = LEARNERS.slice(20, 34).map((l, i) => ({
@@ -315,9 +475,21 @@ export const OBSERVATIONS: Observation[] = LEARNERS.slice(5, 45).map((l, i) => {
     learnerName: l.fullName,
     className: `${l.className} ${l.stream}`,
     category,
-    severity: category === "Serious alleged incident" ? "high" : category === "Minor concern" ? "medium" : "low",
+    severity:
+      category === "Serious alleged incident"
+        ? "high"
+        : category === "Minor concern"
+          ? "medium"
+          : "low",
     dateTime: `2026-08-0${int(1, 3)} ${pad(int(7, 20), 2)}:${pad(int(0, 59), 2)}`,
-    location: pick(["Classroom Block A", "Dining Hall", "Playground", "Library", "Main Gate", "Dormitory"]),
+    location: pick([
+      "Classroom Block A",
+      "Dining Hall",
+      "Playground",
+      "Library",
+      "Main Gate",
+      "Dormitory",
+    ]),
     relatedOccasion: pick([...OCCASIONS.map((o) => o.name), null]),
     description: pick([
       "Learner assisted a classmate who had fallen during the morning assembly and reported it to the duty teacher.",
@@ -348,7 +520,14 @@ export const OBSERVATIONS: Observation[] = LEARNERS.slice(5, 45).map((l, i) => {
 
 export const CASES: ConductCase[] = LEARNERS.slice(50, 68).map((l, i) => {
   const stages: ConductCase["stage"][] = [
-    "Submitted","Assigned","Learner response","Evidence review","Finding","Intervention","Review","Closure",
+    "Submitted",
+    "Assigned",
+    "Learner response",
+    "Evidence review",
+    "Finding",
+    "Intervention",
+    "Review",
+    "Closure",
   ];
   const stage = stages[i % stages.length]!;
   const closed = stage === "Closure";
@@ -371,7 +550,9 @@ export const CASES: ConductCase[] = LEARNERS.slice(50, 68).map((l, i) => {
     finding: closed ? pick(["Confirmed", "Unconfirmed", "Dismissed", "Referred"]) : null,
     assignedReviewer: pick(["Samuel Wamala", "Grace Nakabugo", "Esther Akello"]),
     learnerResponse:
-      i % 2 === 0 ? "The learner states that permission had been granted verbally by the duty teacher." : null,
+      i % 2 === 0
+        ? "The learner states that permission had been granted verbally by the duty teacher."
+        : null,
     evidenceCount: int(0, 5),
     parentContacted: i % 3 !== 0,
     openedOn: `2026-07-${pad(int(10, 28), 2)}`,
@@ -379,9 +560,27 @@ export const CASES: ConductCase[] = LEARNERS.slice(50, 68).map((l, i) => {
     closed,
     confidential: i % 4 === 0,
     timeline: [
-      { id: `tl-${i}-1`, stage: "Submitted", actor: pick(STAFF).name, at: `2026-07-${pad(int(10, 18), 2)} 09:12`, note: "Observation escalated to a case review." },
-      { id: `tl-${i}-2`, stage: "Assigned", actor: "Grace Nakabugo", at: `2026-07-${pad(int(19, 22), 2)} 10:04`, note: "Reviewer assigned and learner notified." },
-      { id: `tl-${i}-3`, stage: "Learner response", actor: l.fullName, at: `2026-07-${pad(int(23, 26), 2)} 14:30`, note: "Learner gave a written response." },
+      {
+        id: `tl-${i}-1`,
+        stage: "Submitted",
+        actor: pick(STAFF).name,
+        at: `2026-07-${pad(int(10, 18), 2)} 09:12`,
+        note: "Observation escalated to a case review.",
+      },
+      {
+        id: `tl-${i}-2`,
+        stage: "Assigned",
+        actor: "Grace Nakabugo",
+        at: `2026-07-${pad(int(19, 22), 2)} 10:04`,
+        note: "Reviewer assigned and learner notified.",
+      },
+      {
+        id: `tl-${i}-3`,
+        stage: "Learner response",
+        actor: l.fullName,
+        at: `2026-07-${pad(int(23, 26), 2)} 14:30`,
+        note: "Learner gave a written response.",
+      },
     ],
   };
 });
@@ -410,8 +609,19 @@ export const HEALTH_ENCOUNTERS: HealthEncounter[] = LEARNERS.slice(90, 104).map(
   learnerId: l.id,
   learnerName: l.fullName,
   className: `${l.className} ${l.stream}`,
-  complaint: pick(["Headache", "Stomach discomfort", "Minor sports injury", "Fever check", "Allergic reaction review"]),
-  action: pick(["Rest and fluids", "Observation for one hour", "First aid applied", "Guardian informed"]),
+  complaint: pick([
+    "Headache",
+    "Stomach discomfort",
+    "Minor sports injury",
+    "Fever check",
+    "Allergic reaction review",
+  ]),
+  action: pick([
+    "Rest and fluids",
+    "Observation for one hour",
+    "First aid applied",
+    "Guardian informed",
+  ]),
   attendedBy: "Faith Atim",
   arrivedAt: `2026-08-03 ${pad(int(7, 16), 2)}:${pad(int(0, 59), 2)}`,
   outcome: pick(["Returned to class", "Resting", "Referred to clinic", "Guardian collected"]),
@@ -435,7 +645,10 @@ export const SUBJECTS: Subject[] = [
   name: name as string,
   level: level as Subject["level"],
   teacher: teacher as string,
-  classes: level === "A-Level" ? ["Senior Five", "Senior Six"] : ["Senior One", "Senior Two", "Senior Three", "Senior Four"],
+  classes:
+    level === "A-Level"
+      ? ["Senior Five", "Senior Six"]
+      : ["Senior One", "Senior Two", "Senior Three", "Senior Four"],
   completion: int(45, 100),
 }));
 
@@ -457,12 +670,36 @@ export const ASSESSMENTS: Assessment[] = SUBJECTS.flatMap((s, i) =>
 );
 
 export const MESSAGES: NotificationMessage[] = [
-  ["Unexplained absence alert", "Guardians of 18 learners", "Your child was not recorded present today. Please contact the school office."],
-  ["Arrival notification", "Guardians of Senior One", "Your child arrived safely at school this morning."],
-  ["Reporting date reminder", "All guardians", "Term Two reporting continues on Monday. Please contact the school office for details."],
-  ["Parent meeting invitation", "Guardians of Senior Four", "You are invited to the Senior Four guardians' meeting this Saturday at 10:00."],
-  ["Learner support follow-up", "Selected guardians", "Please contact the school regarding an important learner-support matter."],
-  ["Bus route change", "Guardians on Route 03", "Route 03 will depart 15 minutes earlier this week."],
+  [
+    "Unexplained absence alert",
+    "Guardians of 18 learners",
+    "Your child was not recorded present today. Please contact the school office.",
+  ],
+  [
+    "Arrival notification",
+    "Guardians of Senior One",
+    "Your child arrived safely at school this morning.",
+  ],
+  [
+    "Reporting date reminder",
+    "All guardians",
+    "Term Two reporting continues on Monday. Please contact the school office for details.",
+  ],
+  [
+    "Parent meeting invitation",
+    "Guardians of Senior Four",
+    "You are invited to the Senior Four guardians' meeting this Saturday at 10:00.",
+  ],
+  [
+    "Learner support follow-up",
+    "Selected guardians",
+    "Please contact the school regarding an important learner-support matter.",
+  ],
+  [
+    "Bus route change",
+    "Guardians on Route 03",
+    "Route 03 will depart 15 minutes earlier this week.",
+  ],
 ].map(([template, audience, body], i) => {
   const recipients = int(20, 420);
   const failed = int(0, 12);
@@ -501,14 +738,27 @@ export const AUDIT_EVENTS: AuditEvent[] = Array.from({ length: 60 }, (_, i) => {
     user: staff.name,
     role: staff.roleName,
     action,
-    module: pick(["Learners", "Attendance", "Observations", "Cases", "Devices", "Reports", "Staff", "Settings"]),
+    module: pick([
+      "Learners",
+      "Attendance",
+      "Observations",
+      "Cases",
+      "Devices",
+      "Reports",
+      "Staff",
+      "Settings",
+    ]),
     record: pick(LEARNERS).admissionNumber,
     device: pick(DEVICES).name,
     ip: `41.${int(50, 250)}.${int(1, 250)}.${int(1, 250)}`,
     reason: action === "Revoked QR credential" ? "Card reported lost by the learner" : null,
     result: denied ? "denied" : "success",
-    before: action.startsWith("Updated") ? { guardianPhone: "+256 772 145 900", residence: "Day" } : undefined,
-    after: action.startsWith("Updated") ? { guardianPhone: "+256 701 445 231", residence: "Boarding" } : undefined,
+    before: action.startsWith("Updated")
+      ? { guardianPhone: "+256 772 145 900", residence: "Day" }
+      : undefined,
+    after: action.startsWith("Updated")
+      ? { guardianPhone: "+256 701 445 231", residence: "Boarding" }
+      : undefined,
   };
 });
 
@@ -522,7 +772,10 @@ export const ATTENDANCE_TREND = [
   { day: "Mon", present: 641, late: 20, absent: 14 },
 ];
 
-export const CLASS_RATES = CLASSES.map((c) => ({ className: c.replace("Senior ", "S"), rate: int(84, 99) }));
+export const CLASS_RATES = CLASSES.map((c) => ({
+  className: c.replace("Senior ", "S"),
+  rate: int(84, 99),
+}));
 
 export const GRADE_BOUNDARIES: import("@/types").GradeBoundary[] = [
   { id: "gb-1", grade: "D1", minMark: 90, maxMark: 100, points: 1, descriptor: "Distinction 1" },
@@ -536,7 +789,13 @@ export const GRADE_BOUNDARIES: import("@/types").GradeBoundary[] = [
   { id: "gb-9", grade: "F9", minMark: 0, maxMark: 34, points: 9, descriptor: "Fail 9" },
 ];
 
-const COMPETENCIES = ["Communication", "Critical thinking", "Cooperation", "Self-directed learning", "Generation of new ideas"];
+const COMPETENCIES = [
+  "Communication",
+  "Critical thinking",
+  "Cooperation",
+  "Self-directed learning",
+  "Generation of new ideas",
+];
 
 export const COMPETENCY_RECORDS: import("@/types").CompetencyRecord[] = LEARNERS.slice(0, 60)
   .filter((l) => ["Senior One", "Senior Two", "Senior Three", "Senior Four"].includes(l.className))
@@ -561,7 +820,13 @@ export const COMPETENCY_RECORDS: import("@/types").CompetencyRecord[] = LEARNERS
 
 export const SUBJECT_ANALYSIS: import("@/types").SubjectAnalysisRow[] = SUBJECTS.map((s) => {
   const average = int(52, 84);
-  return { subject: s.name, average, highest: Math.min(100, average + int(10, 16)), lowest: Math.max(20, average - int(20, 35)), passRate: int(58, 96) };
+  return {
+    subject: s.name,
+    average,
+    highest: Math.min(100, average + int(10, 16)),
+    lowest: Math.max(20, average - int(20, 35)),
+    passRate: int(58, 96),
+  };
 });
 
 export const CLASS_ANALYSIS: import("@/types").ClassAnalysisRow[] = CLASSES.map((c) => ({
@@ -569,26 +834,31 @@ export const CLASS_ANALYSIS: import("@/types").ClassAnalysisRow[] = CLASSES.map(
   average: int(55, 82),
   passRate: int(60, 95),
   ranking: 0,
-})).sort((a, b) => b.average - a.average)
+}))
+  .sort((a, b) => b.average - a.average)
   .map((r, i) => ({ ...r, ranking: i + 1 }));
 
-export const LEARNER_PROGRESS: import("@/types").LearnerProgressRow[] = LEARNERS.slice(0, 30).map((l, i) => {
-  const termOne = int(48, 88);
-  const termTwo = int(48, 88);
-  const termThree = int(48, 88);
-  return {
-    learnerId: l.id,
-    learnerName: l.fullName,
-    className: `${l.className} ${l.stream}`,
-    termOne,
-    termTwo,
-    termThree,
-    trend: termThree > termTwo ? "up" : termThree < termTwo ? "down" : "flat",
-    position: i + 1,
-  };
-});
+export const LEARNER_PROGRESS: import("@/types").LearnerProgressRow[] = LEARNERS.slice(0, 30).map(
+  (l, i) => {
+    const termOne = int(48, 88);
+    const termTwo = int(48, 88);
+    const termThree = int(48, 88);
+    return {
+      learnerId: l.id,
+      learnerName: l.fullName,
+      className: `${l.className} ${l.stream}`,
+      termOne,
+      termTwo,
+      termThree,
+      trend: termThree > termTwo ? "up" : termThree < termTwo ? "down" : "flat",
+      position: i + 1,
+    };
+  },
+);
 
-export const MISSING_WORK: import("@/types").MissingWorkRow[] = ASSESSMENTS.filter((a) => a.entered < a.expected)
+export const MISSING_WORK: import("@/types").MissingWorkRow[] = ASSESSMENTS.filter(
+  (a) => a.entered < a.expected,
+)
   .slice(0, 16)
   .flatMap((a, i) =>
     LEARNERS.slice(i * 2, i * 2 + 2).map((l, j) => ({

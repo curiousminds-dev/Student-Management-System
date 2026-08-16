@@ -68,14 +68,20 @@ export function PermissionDenied({ area }: { area: string }) {
       </span>
       <h1 className="text-lg font-semibold">You do not have access to {area}</h1>
       <p className="text-[13px] text-muted-foreground">
-        Your role does not include permission for this area. If you need access for your duties, ask the school
-        administrator to review your permissions.
+        Your role does not include permission for this area. If you need access for your duties, ask
+        the school administrator to review your permissions.
       </p>
     </div>
   );
 }
 
-export function SensitiveNotice({ children, className }: { children: ReactNode; className?: string }) {
+export function SensitiveNotice({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <div
       className={cn(

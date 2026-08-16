@@ -22,7 +22,9 @@ export function PageHeader({
           <h1 className="page-title truncate text-foreground">{title}</h1>
           {meta}
         </div>
-        {description ? <p className="mt-1 text-[13px] text-muted-foreground">{description}</p> : null}
+        {description ? (
+          <p className="mt-1 text-[13px] text-muted-foreground">{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </header>
@@ -50,7 +52,9 @@ export function SectionCard({
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3">
           <div className="min-w-0">
             <h2 className="truncate text-[15px] font-semibold text-foreground">{title}</h2>
-            {description ? <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{description}</p> : null}
+            {description ? (
+              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{description}</p>
+            ) : null}
           </div>
           {action}
         </div>
@@ -100,7 +104,11 @@ export function MetricCard({
           <TrendIcon
             className={cn(
               "h-3 w-3",
-              trend === "up" ? "text-success" : trend === "down" ? "text-[oklch(0.52_0.12_74)]" : "text-muted-foreground",
+              trend === "up"
+                ? "text-success"
+                : trend === "down"
+                  ? "text-[oklch(0.52_0.12_74)]"
+                  : "text-muted-foreground",
             )}
           />
           {change}
@@ -110,9 +118,22 @@ export function MetricCard({
   );
 }
 
-export function QuickLink({ to, label, icon: Icon }: { to: string; label: string; icon: React.ComponentType<{ className?: string }> }) {
+export function QuickLink({
+  to,
+  label,
+  icon: Icon,
+}: {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
   return (
-    <Button asChild variant="outline" size="sm" className="h-auto justify-start gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium">
+    <Button
+      asChild
+      variant="outline"
+      size="sm"
+      className="h-auto justify-start gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium"
+    >
       <Link to={to}>
         <Icon className="h-4 w-4 text-primary" />
         <span className="truncate">{label}</span>

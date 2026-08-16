@@ -18,6 +18,8 @@ dist-ssr
 *.db
 *.db-journal
 .env.test
+secrets/
+backups/
 
 # Wrangler / Cloudflare
 .wrangler/

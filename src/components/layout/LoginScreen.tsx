@@ -9,8 +9,9 @@ import type { RoleKey } from "@/types";
 import { cn } from "@/lib/utils";
 
 export function LoginScreen() {
-  const { login, signingIn } = useAuth();
+  const { login, signingIn, mfaRequired, verifyMfa } = useAuth();
   const [role, setRole] = useState<RoleKey>("administrator");
+  const [mfaCode, setMfaCode] = useState("");
   const account = DEMO_ACCOUNTS.find((a) => a.role === role)!;
 
   return (
@@ -30,21 +31,25 @@ export function LoginScreen() {
             Student Attendance, Progress and Welfare Management System
           </h2>
           <p className="mt-3 text-[13px] leading-relaxed text-sidebar-foreground/70">
-            One record for every learner: QR identity, attendance occasions, authorised absences, welfare support and
-            conduct review — with a full audit trail for every action taken.
+            One record for every learner: QR identity, attendance occasions, authorised absences,
+            welfare support and conduct review — with a full audit trail for every action taken.
           </p>
           <ul className="mt-6 space-y-2 text-[13px] text-sidebar-foreground/80">
-            {["Offline-tolerant scanning at gate, assembly, prep and dormitory", "Confidential welfare records separated by role", "Reports for administrators, headteachers and stakeholders"].map(
-              (item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-primary" />
-                  {item}
-                </li>
-              ),
-            )}
+            {[
+              "Offline-tolerant scanning at gate, assembly, prep and dormitory",
+              "Confidential welfare records separated by role",
+              "Reports for administrators, headteachers and stakeholders",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-primary" />
+                {item}
+              </li>
+            ))}
           </ul>
         </div>
-        <p className="text-[11px] text-sidebar-foreground/50">Demonstration environment · Fictional data</p>
+        <p className="text-[11px] text-sidebar-foreground/50">
+          Demonstration environment · Fictional data
+        </p>
       </div>
 
       <div className="flex items-center justify-center bg-background px-5 py-10">
@@ -52,7 +57,8 @@ export function LoginScreen() {
           className="w-full max-w-sm"
           onSubmit={(e) => {
             e.preventDefault();
-            void login(role);
+            if (mfaRequired) void verifyMfa(mfaCode);
+            else void login(role);
           }}
         >
           <h1 className="text-xl font-semibold">Sign in</h1>
@@ -61,45 +67,84 @@ export function LoginScreen() {
           </p>
 
           <div className="mt-6 space-y-3">
-            <div>
-              <Label htmlFor="email" className="text-[12px]">
-                Work email
-              </Label>
-              <Input id="email" value={account.email} readOnly className="mt-1 h-9 text-[13px]" />
-            </div>
+            {mfaRequired ? (
+              <div>
+                <Label htmlFor="mfa-code" className="text-[12px]">
+                  Authenticator code
+                </Label>
+                <Input
+                  id="mfa-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={mfaCode}
+                  onChange={(event) =>
+                    setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  className="mt-1 h-9 text-[13px]"
+                />
+              </div>
+            ) : null}
+            {!mfaRequired ? (
+              <>
+                <div>
+                  <Label htmlFor="email" className="text-[12px]">
+                    Work email
+                  </Label>
+                  <Input
+                    id="email"
+                    value={account.email}
+                    readOnly
+                    className="mt-1 h-9 text-[13px]"
+                  />
+                </div>
+              </>
+            ) : null}
             <div>
               <Label htmlFor="password" className="text-[12px]">
                 Password
               </Label>
-              <Input id="password" type="password" defaultValue="demo-password" className="mt-1 h-9 text-[13px]" />
+              <Input
+                id="password"
+                type="password"
+                defaultValue="demo-password"
+                className="mt-1 h-9 text-[13px]"
+              />
             </div>
           </div>
 
-          <p className="mt-6 mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-            Demonstration role
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {DEMO_ACCOUNTS.map((a) => (
-              <button
-                key={a.role}
-                type="button"
-                onClick={() => setRole(a.role)}
-                className={cn(
-                  "rounded-md border px-2.5 py-2 text-left text-[12px] font-medium transition-colors",
-                  role === a.role
-                    ? "border-cyan bg-accent text-primary"
-                    : "border-border bg-card text-muted-foreground hover:border-cyan/50",
-                )}
-              >
-                {ROLES[a.role].name}
-              </button>
-            ))}
-          </div>
+          {!mfaRequired ? (
+            <>
+              <p className="mt-6 mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                Demonstration role
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {DEMO_ACCOUNTS.map((a) => (
+                  <button
+                    key={a.role}
+                    type="button"
+                    onClick={() => setRole(a.role)}
+                    className={cn(
+                      "rounded-md border px-2.5 py-2 text-left text-[12px] font-medium transition-colors",
+                      role === a.role
+                        ? "border-cyan bg-accent text-primary"
+                        : "border-border bg-card text-muted-foreground hover:border-cyan/50",
+                    )}
+                  >
+                    {ROLES[a.role].name}
+                  </button>
+                ))}
+              </div>
 
-          <p className="mt-3 text-[12px] text-muted-foreground">{ROLES[role].description}</p>
+              <p className="mt-3 text-[12px] text-muted-foreground">{ROLES[role].description}</p>
+            </>
+          ) : null}
 
           <Button type="submit" className="mt-5 h-9 w-full text-[13px]" disabled={signingIn}>
-            {signingIn ? "Signing in…" : `Sign in as ${ROLES[role].name}`}
+            {signingIn
+              ? "Signing in…"
+              : mfaRequired
+                ? "Verify code"
+                : `Sign in as ${ROLES[role].name}`}
           </Button>
         </form>
       </div>
