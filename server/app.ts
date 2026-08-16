@@ -474,6 +474,42 @@ export async function buildApp(): Promise<FastifyInstance> {
         orderBy: { assessmentDate: "desc" },
       }),
   );
+  app.get(
+    "/api/v1/academics/assessments/:id/marks",
+    { preHandler: requirePermission("academics.view") },
+    async (request) => {
+      const id = (request.params as any).id;
+      const assessment = await prisma.assessment.findFirstOrThrow({
+        where: { id, schoolId: request.sessionUser!.schoolId },
+      });
+      const learners = await prisma.learner.findMany({
+        where: {
+          schoolId: request.sessionUser!.schoolId,
+          className: assessment.className,
+          status: "active",
+        },
+        include: { marks: { where: { assessmentId: id }, take: 1 } },
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      });
+      return {
+        assessmentId: assessment.id,
+        assessmentName: assessment.name,
+        subject: assessment.subject,
+        className: assessment.className,
+        maxMark: assessment.maximumMark,
+        cells: learners.map((learner) => ({
+          learnerId: learner.id,
+          learnerName: `${learner.firstName} ${learner.lastName}`,
+          admissionNumber: learner.admissionNumber,
+          mark:
+            learner.marks[0]?.score === null || learner.marks[0]?.score === undefined
+              ? null
+              : Number(learner.marks[0].score),
+          comment: learner.marks[0]?.comment ?? "",
+        })),
+      };
+    },
+  );
   app.post(
     "/api/v1/academics/assessments",
     { preHandler: requirePermission("academics.manage") },
@@ -508,19 +544,69 @@ export async function buildApp(): Promise<FastifyInstance> {
         )
         .max(500)
         .parse(request.body);
+      const learnerIds = [...new Set(marks.map((mark) => mark.learnerId))];
+      if (learnerIds.length !== marks.length)
+        throw Object.assign(new Error("Each learner may appear only once"), { statusCode: 400 });
+      const validLearners = await prisma.learner.count({
+        where: {
+          id: { in: learnerIds },
+          schoolId: request.sessionUser!.schoolId,
+          className: assessment.className,
+          status: "active",
+        },
+      });
+      if (validLearners !== learnerIds.length)
+        throw Object.assign(new Error("One or more learners are not active in this class"), {
+          statusCode: 400,
+        });
       for (const mark of marks) {
         if (mark.score !== null && mark.score > assessment.maximumMark)
           throw Object.assign(new Error("Mark exceeds assessment maximum"), { statusCode: 400 });
-        await prisma.mark.upsert({
-          where: { assessmentId_learnerId: { assessmentId: id, learnerId: mark.learnerId } },
-          create: { assessmentId: id, ...mark },
-          update: mark,
-        });
       }
+      await prisma.$transaction(
+        marks.map((mark) =>
+          prisma.mark.upsert({
+            where: { assessmentId_learnerId: { assessmentId: id, learnerId: mark.learnerId } },
+            create: { assessmentId: id, ...mark },
+            update: mark,
+          }),
+        ),
+      );
       await audit(request, "assessment.marks.saved", "Assessment", id, undefined, {
         count: marks.length,
       });
       return { saved: marks.length };
+    },
+  );
+  app.post(
+    "/api/v1/academics/assessments/:id/publish",
+    { preHandler: requirePermission("academics.manage") },
+    async (request) => {
+      const id = (request.params as any).id;
+      const before = await prisma.assessment.findFirstOrThrow({
+        where: { id, schoolId: request.sessionUser!.schoolId },
+      });
+      const [expected, completed] = await Promise.all([
+        prisma.learner.count({
+          where: {
+            schoolId: request.sessionUser!.schoolId,
+            className: before.className,
+            status: "active",
+          },
+        }),
+        prisma.mark.count({ where: { assessmentId: id, score: { not: null } } }),
+      ]);
+      if (expected === 0 || completed !== expected)
+        throw Object.assign(
+          new Error(`Complete all marks before publishing (${completed}/${expected} entered)`),
+          { statusCode: 400 },
+        );
+      const row = await prisma.assessment.update({
+        where: { id },
+        data: { publishedAt: new Date() },
+      });
+      await audit(request, "assessment.published", "Assessment", id, before, row);
+      return row;
     },
   );
 

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AcademicsRouteImport } from './routes/academics'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as CasesRouteImport } from './routes/cases'
@@ -19,6 +20,7 @@ import { Route as OccasionsRouteImport } from './routes/occasions'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as StaffRouteImport } from './routes/staff'
+import { Route as WelfareRouteImport } from './routes/welfare'
 import { Route as LearnersIndexRouteImport } from './routes/learners.index'
 import { Route as LearnersIdRouteImport } from './routes/learners.$id'
 import { Route as LearnersNewRouteImport } from './routes/learners.new'
@@ -26,6 +28,11 @@ import { Route as LearnersNewRouteImport } from './routes/learners.new'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcademicsRoute = AcademicsRouteImport.update({
+  id: '/academics',
+  path: '/academics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AttendanceRoute = AttendanceRouteImport.update({
@@ -73,6 +80,11 @@ const StaffRoute = StaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WelfareRoute = WelfareRouteImport.update({
+  id: '/welfare',
+  path: '/welfare',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LearnersIndexRoute = LearnersIndexRouteImport.update({
   id: '/learners/',
   path: '/learners/',
@@ -91,6 +103,7 @@ const LearnersNewRoute = LearnersNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/academics': typeof AcademicsRoute
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
   '/cases': typeof CasesRoute
@@ -100,12 +113,14 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/scan': typeof ScanRoute
   '/staff': typeof StaffRoute
+  '/welfare': typeof WelfareRoute
   '/learners/$id': typeof LearnersIdRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners/': typeof LearnersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/academics': typeof AcademicsRoute
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
   '/cases': typeof CasesRoute
@@ -115,6 +130,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/scan': typeof ScanRoute
   '/staff': typeof StaffRoute
+  '/welfare': typeof WelfareRoute
   '/learners/$id': typeof LearnersIdRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners': typeof LearnersIndexRoute
@@ -122,6 +138,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/academics': typeof AcademicsRoute
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
   '/cases': typeof CasesRoute
@@ -131,6 +148,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/scan': typeof ScanRoute
   '/staff': typeof StaffRoute
+  '/welfare': typeof WelfareRoute
   '/learners/$id': typeof LearnersIdRoute
   '/learners/new': typeof LearnersNewRoute
   '/learners/': typeof LearnersIndexRoute
@@ -139,6 +157,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/academics'
     | '/attendance'
     | '/audit'
     | '/cases'
@@ -148,12 +167,14 @@ export interface FileRouteTypes {
     | '/reports'
     | '/scan'
     | '/staff'
+    | '/welfare'
     | '/learners/$id'
     | '/learners/new'
     | '/learners/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/academics'
     | '/attendance'
     | '/audit'
     | '/cases'
@@ -163,12 +184,14 @@ export interface FileRouteTypes {
     | '/reports'
     | '/scan'
     | '/staff'
+    | '/welfare'
     | '/learners/$id'
     | '/learners/new'
     | '/learners'
   id:
     | '__root__'
     | '/'
+    | '/academics'
     | '/attendance'
     | '/audit'
     | '/cases'
@@ -178,6 +201,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/scan'
     | '/staff'
+    | '/welfare'
     | '/learners/$id'
     | '/learners/new'
     | '/learners/'
@@ -185,6 +209,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcademicsRoute: typeof AcademicsRoute
   AttendanceRoute: typeof AttendanceRoute
   AuditRoute: typeof AuditRoute
   CasesRoute: typeof CasesRoute
@@ -194,6 +219,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   ScanRoute: typeof ScanRoute
   StaffRoute: typeof StaffRoute
+  WelfareRoute: typeof WelfareRoute
   LearnersIdRoute: typeof LearnersIdRoute
   LearnersNewRoute: typeof LearnersNewRoute
   LearnersIndexRoute: typeof LearnersIndexRoute
@@ -206,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/academics': {
+      id: '/academics'
+      path: '/academics'
+      fullPath: '/academics'
+      preLoaderRoute: typeof AcademicsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/attendance': {
@@ -271,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/welfare': {
+      id: '/welfare'
+      path: '/welfare'
+      fullPath: '/welfare'
+      preLoaderRoute: typeof WelfareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/learners/': {
       id: '/learners/'
       path: '/learners'
@@ -297,6 +337,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcademicsRoute: AcademicsRoute,
   AttendanceRoute: AttendanceRoute,
   AuditRoute: AuditRoute,
   CasesRoute: CasesRoute,
@@ -306,6 +347,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   ScanRoute: ScanRoute,
   StaffRoute: StaffRoute,
+  WelfareRoute: WelfareRoute,
   LearnersIdRoute: LearnersIdRoute,
   LearnersNewRoute: LearnersNewRoute,
   LearnersIndexRoute: LearnersIndexRoute,

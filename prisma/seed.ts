@@ -7,6 +7,12 @@ const prisma = new PrismaClient();
 async function main() {
   await prisma.auditEvent.deleteMany();
   await prisma.message.deleteMany();
+  await prisma.mark.deleteMany();
+  await prisma.assessment.deleteMany();
+  await prisma.conductCase.deleteMany();
+  await prisma.welfareObservation.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
+  await prisma.session.deleteMany();
   await prisma.syncBatch.deleteMany();
   await prisma.attendanceRecord.deleteMany();
   await prisma.qrCredential.deleteMany();
@@ -107,6 +113,35 @@ async function main() {
       secretHash: createHash("sha256").update(deviceSecret).digest("hex"),
       location: "Main gate",
     },
+  });
+  await prisma.welfareObservation.create({
+    data: {
+      schoolId: school.id,
+      learnerId: learners[1]!.id,
+      reporterId: users[5]!.id,
+      category: "Welfare concern",
+      severity: "medium",
+      summary: "Follow-up after repeated sick-bay visits",
+      details:
+        "Learner reported recurring headaches during afternoon lessons. Guardian contact and a clinical review were recommended.",
+      occurredAt: new Date(),
+      reviewAt: new Date(Date.now() + 7 * 86400000),
+    },
+  });
+  const assessment = await prisma.assessment.create({
+    data: {
+      schoolId: school.id,
+      createdById: users[2]!.id,
+      name: "Beginning of Term Test",
+      subject: "Mathematics",
+      className: "Senior One",
+      term: "Term One 2026",
+      maximumMark: 100,
+      assessmentDate: new Date(),
+    },
+  });
+  await prisma.mark.create({
+    data: { assessmentId: assessment.id, learnerId: learners[0]!.id, score: 78 },
   });
   console.log({ demoPassword: "demo-password", demoQr, occasionId: occasion.id });
 }
