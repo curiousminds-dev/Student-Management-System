@@ -124,6 +124,18 @@ export async function buildApp(): Promise<FastifyInstance> {
       .send({ error: status >= 500 ? "Internal server error" : error.message });
   });
 
+  app.get("/", async (_request, reply) => {
+    reply.header("Cache-Control", "no-store");
+    return {
+      service: "student-management-api",
+      health: "/health",
+      readiness: "/health/ready",
+    };
+  });
+  app.get("/robots.txt", async (_request, reply) => {
+    reply.type("text/plain").header("Cache-Control", "no-store");
+    return "User-agent: *\nDisallow: /api/\n";
+  });
   app.get("/health", async () => ({ status: "ok", service: "student-management-api" }));
   const userDto = (user: any) => ({
     id: user.id,
