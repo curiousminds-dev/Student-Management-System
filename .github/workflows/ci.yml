@@ -68,3 +68,4 @@ jobs:
         with:
           target: http://localhost:3001
           fail_action: true
+          rules_file_name: .zap-rules.tsv
