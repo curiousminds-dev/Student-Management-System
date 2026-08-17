@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AcademicsRouteImport } from './routes/academics'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as AuditRouteImport } from './routes/audit'
+import { Route as BiometricsRouteImport } from './routes/biometrics'
 import { Route as CasesRouteImport } from './routes/cases'
 import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as ObservationsRouteImport } from './routes/observations'
@@ -43,6 +44,11 @@ const AttendanceRoute = AttendanceRouteImport.update({
 const AuditRoute = AuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BiometricsRoute = BiometricsRouteImport.update({
+  id: '/biometrics',
+  path: '/biometrics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CasesRoute = CasesRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/academics': typeof AcademicsRoute
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
+  '/biometrics': typeof BiometricsRoute
   '/cases': typeof CasesRoute
   '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/academics': typeof AcademicsRoute
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
+  '/biometrics': typeof BiometricsRoute
   '/cases': typeof CasesRoute
   '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/academics': typeof AcademicsRoute
   '/attendance': typeof AttendanceRoute
   '/audit': typeof AuditRoute
+  '/biometrics': typeof BiometricsRoute
   '/cases': typeof CasesRoute
   '/devices': typeof DevicesRoute
   '/observations': typeof ObservationsRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/academics'
     | '/attendance'
     | '/audit'
+    | '/biometrics'
     | '/cases'
     | '/devices'
     | '/observations'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/academics'
     | '/attendance'
     | '/audit'
+    | '/biometrics'
     | '/cases'
     | '/devices'
     | '/observations'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/academics'
     | '/attendance'
     | '/audit'
+    | '/biometrics'
     | '/cases'
     | '/devices'
     | '/observations'
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   AcademicsRoute: typeof AcademicsRoute
   AttendanceRoute: typeof AttendanceRoute
   AuditRoute: typeof AuditRoute
+  BiometricsRoute: typeof BiometricsRoute
   CasesRoute: typeof CasesRoute
   DevicesRoute: typeof DevicesRoute
   ObservationsRoute: typeof ObservationsRoute
@@ -253,6 +266,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/audit'
       preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biometrics': {
+      id: '/biometrics'
+      path: '/biometrics'
+      fullPath: '/biometrics'
+      preLoaderRoute: typeof BiometricsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cases': {
@@ -340,6 +360,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcademicsRoute: AcademicsRoute,
   AttendanceRoute: AttendanceRoute,
   AuditRoute: AuditRoute,
+  BiometricsRoute: BiometricsRoute,
   CasesRoute: CasesRoute,
   DevicesRoute: DevicesRoute,
   ObservationsRoute: ObservationsRoute,

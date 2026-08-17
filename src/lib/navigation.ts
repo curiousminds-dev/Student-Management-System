@@ -15,6 +15,7 @@ import {
   ScrollText,
   Settings,
   ScanLine,
+  ScanFace,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -54,6 +55,7 @@ export const NAVIGATION: NavSection[] = [
       },
       { label: "Occasions", to: "/occasions", icon: ClipboardList, permission: "attendance.view" },
       { label: "Scanning", to: "/scan", icon: ScanLine, permission: "attendance.record" },
+      { label: "Biometrics", to: "/biometrics", icon: ScanFace, permission: "devices.view" },
     ],
   },
   {

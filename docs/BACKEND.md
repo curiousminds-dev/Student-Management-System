@@ -18,6 +18,9 @@ All seeded accounts use `demo-password`. The seed QR value is `NCS-DEMO-AMINA-00
 - Attendance has uniqueness constraints for learner/occasion and offline event IDs.
 - Offline batches and events use client IDs for safe idempotent retries.
 - QR issuance revokes the previous active credential transactionally.
+- Biometric enrollment requires recorded consent. Raw facial images and fingerprint templates stay in the approved device/provider; the platform stores only the provider reference, quality scores, and audit metadata.
+- Face verification requires both match confidence and liveness. Below-threshold matches are quarantined for authorised review rather than creating attendance automatically.
+- Scanner events are authenticated to an approved device, checked against its declared capabilities, and idempotent by device/event ID.
 - Mutations write append-only audit events with actor, entity, request correlation ID, IP and user agent.
 - Passwords use bcrypt; QR secrets are returned only when issued and stored as hashes.
 
@@ -28,8 +31,14 @@ All seeded accounts use `demo-password`. The seed QR value is `NCS-DEMO-AMINA-00
 - `POST /learners/:id/qr-credentials`, `POST /qr-credentials/:id/revoke`
 - `GET|POST /attendance/occasions`, `PATCH /attendance/occasions/:id/status`
 - `POST /attendance/scan`, `POST /attendance/sync`
+- `GET /biometrics/credentials`, `POST /learners/:id/biometrics`, `POST /biometrics/credentials/:id/revoke`
+- `POST /attendance/biometric-verify`, `GET /attendance/biometric-captures`, `POST /attendance/biometric-captures/:id/review`
 - `GET /attendance`, `GET /attendance/scans`, `GET /devices`
 - `POST /communications`, `GET /audit-logs`
 - `GET /reports/attendance-summary`, `GET /reports/attendance.csv`
 
 Communications are placed in a durable outbox (`Message`) for a provider worker to deliver. This avoids losing messages and keeps provider credentials out of request handlers.
+
+## Biometric device adapter
+
+The web app includes an administrator-facing adapter test, but actual matching must run in the selected face-camera or fingerprint-reader SDK. After local matching, that trusted adapter authenticates as a registered device and posts its provider reference, scores, modality, occasion, and unique event ID to `/attendance/biometric-verify`. The API deliberately does not accept or retain raw biometric samples.
