@@ -331,6 +331,7 @@ export interface HealthEncounter {
 
 export interface Device {
   id: UUID;
+  publicId?: string;
   name: string;
   type: "Tablet" | "Phone" | "Laptop" | "USB scanner";
   assignedUser: string;
@@ -343,6 +344,40 @@ export interface Device {
   version: string;
   lastActivity: string;
   connection: "online" | "offline";
+  capabilities?: string;
+}
+
+export interface BiometricCredential {
+  id: UUID;
+  learnerId: UUID;
+  modality: "face" | "fingerprint";
+  provider: string;
+  providerReference?: string;
+  status: "pending" | "active" | "revoked" | "replaced";
+  qualityScore?: number;
+  consentRecorded: boolean;
+  consentBy?: string;
+  enrolledAt: string;
+  learner?: { firstName: string; lastName: string; admissionNumber: string; className: string };
+}
+
+export interface BiometricCapture {
+  id: UUID;
+  learnerId?: UUID;
+  occasionId: UUID;
+  deviceId: UUID;
+  credentialId?: UUID;
+  modality: "face" | "fingerprint";
+  provider: string;
+  confidence?: number;
+  livenessScore?: number;
+  qualityScore?: number;
+  outcome: string;
+  reviewStatus: "not_required" | "pending" | "approved" | "rejected";
+  reviewReason?: string;
+  capturedAt: string;
+  learner?: { firstName: string; lastName: string; admissionNumber: string };
+  device?: { name: string };
 }
 
 export interface SyncRecord {

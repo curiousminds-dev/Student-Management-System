@@ -8,17 +8,18 @@ datasource db {
 }
 
 model School {
-  id           String               @id @default(cuid())
-  name         String
-  createdAt    DateTime             @default(now())
-  campuses     Campus[]
-  users        User[]
-  learners     Learner[]
-  devices      Device[]
-  settings     SchoolSetting[]
-  observations WelfareObservation[]
-  cases        ConductCase[]
-  assessments  Assessment[]
+  id                String               @id @default(cuid())
+  name              String
+  createdAt         DateTime             @default(now())
+  campuses          Campus[]
+  users             User[]
+  learners          Learner[]
+  devices           Device[]
+  settings          SchoolSetting[]
+  observations      WelfareObservation[]
+  cases             ConductCase[]
+  assessments       Assessment[]
+  biometricCaptures BiometricCapture[]
 }
 
 model Campus {
@@ -63,31 +64,33 @@ model User {
 }
 
 model Learner {
-  id              String               @id @default(cuid())
-  schoolId        String
-  campusId        String
-  firstName       String
-  lastName        String
-  admissionNumber String
-  lin             String?
-  className       String
-  stream          String
-  gender          String
-  residence       String
-  dateOfBirth     DateTime
-  guardianName    String
-  guardianPhone   String
-  status          String               @default("active")
-  enrolledOn      DateTime             @default(now())
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  school          School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus          Campus               @relation(fields: [campusId], references: [id])
-  credentials     QrCredential[]
-  attendance      AttendanceRecord[]
-  observations    WelfareObservation[]
-  cases           ConductCase[]
-  marks           Mark[]
+  id                String                @id @default(cuid())
+  schoolId          String
+  campusId          String
+  firstName         String
+  lastName          String
+  admissionNumber   String
+  lin               String?
+  className         String
+  stream            String
+  gender            String
+  residence         String
+  dateOfBirth       DateTime
+  guardianName      String
+  guardianPhone     String
+  status            String                @default("active")
+  enrolledOn        DateTime              @default(now())
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  school            School                @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus            Campus                @relation(fields: [campusId], references: [id])
+  credentials       QrCredential[]
+  attendance        AttendanceRecord[]
+  observations      WelfareObservation[]
+  cases             ConductCase[]
+  marks             Mark[]
+  biometrics        BiometricCredential[]
+  biometricCaptures BiometricCapture[]
 
   @@unique([schoolId, admissionNumber])
   @@index([schoolId, className, stream])
@@ -123,26 +126,29 @@ model AttendanceOccasion {
   updatedAt          DateTime           @updatedAt
   campus             Campus             @relation(fields: [campusId], references: [id])
   records            AttendanceRecord[]
+  biometricCaptures  BiometricCapture[]
 
   @@index([campusId, startsAt])
 }
 
 model Device {
-  id              String             @id @default(cuid())
-  schoolId        String
-  name            String
-  publicId        String             @unique
-  secretHash      String
-  secretVersion   Int                @default(1)
-  secretRotatedAt DateTime           @default(now())
-  location        String
-  status          String             @default("active")
-  lastSyncAt      DateTime?
-  createdAt       DateTime           @default(now())
-  school          School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  records         AttendanceRecord[]
-  syncBatches     SyncBatch[]
-  sessions        DeviceSession[]
+  id                String             @id @default(cuid())
+  schoolId          String
+  name              String
+  publicId          String             @unique
+  secretHash        String
+  secretVersion     Int                @default(1)
+  secretRotatedAt   DateTime           @default(now())
+  location          String
+  status            String             @default("active")
+  lastSyncAt        DateTime?
+  createdAt         DateTime           @default(now())
+  school            School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  records           AttendanceRecord[]
+  syncBatches       SyncBatch[]
+  sessions          DeviceSession[]
+  capabilities      String             @default("qr")
+  biometricCaptures BiometricCapture[]
 }
 
 model Session {
@@ -187,26 +193,88 @@ model DeviceSession {
 }
 
 model AttendanceRecord {
-  id             String             @id @default(cuid())
-  schoolId       String
-  clientEventId  String?
-  learnerId      String
-  occasionId     String
-  deviceId       String?
-  status         String
-  outcome        String             @default("accepted")
-  recordedAt     DateTime
-  recordedById   String
-  source         String             @default("online")
-  reconciliation String             @default("not_required")
-  createdAt      DateTime           @default(now())
-  learner        Learner            @relation(fields: [learnerId], references: [id])
-  occasion       AttendanceOccasion @relation(fields: [occasionId], references: [id])
-  device         Device?            @relation(fields: [deviceId], references: [id])
+  id               String             @id @default(cuid())
+  schoolId         String
+  clientEventId    String?
+  learnerId        String
+  occasionId       String
+  deviceId         String?
+  status           String
+  outcome          String             @default("accepted")
+  recordedAt       DateTime
+  recordedById     String
+  source           String             @default("online")
+  captureMethod    String             @default("qr")
+  confidence       Float?
+  livenessScore    Float?
+  reconciliation   String             @default("not_required")
+  createdAt        DateTime           @default(now())
+  learner          Learner            @relation(fields: [learnerId], references: [id])
+  occasion         AttendanceOccasion @relation(fields: [occasionId], references: [id])
+  device           Device?            @relation(fields: [deviceId], references: [id])
+  biometricCapture BiometricCapture?
 
   @@unique([schoolId, clientEventId])
   @@unique([learnerId, occasionId])
   @@index([schoolId, recordedAt])
+}
+
+model BiometricCredential {
+  id                String             @id @default(cuid())
+  learnerId         String
+  modality          String
+  provider          String
+  providerReference String?
+  status            String             @default("pending")
+  qualityScore      Float?
+  consentRecorded   Boolean            @default(false)
+  consentAt         DateTime?
+  consentBy         String?
+  enrolledById      String
+  enrolledAt        DateTime           @default(now())
+  activatedAt       DateTime?
+  revokedAt         DateTime?
+  revokedReason     String?
+  expiresAt         DateTime?
+  learner           Learner            @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  captures          BiometricCapture[]
+
+  @@unique([provider, providerReference])
+  @@index([learnerId, modality, status])
+}
+
+model BiometricCapture {
+  id                 String               @id @default(cuid())
+  schoolId           String
+  learnerId          String?
+  occasionId         String
+  deviceId           String
+  credentialId       String?
+  clientEventId      String
+  modality           String
+  provider           String
+  providerEventId    String?
+  confidence         Float?
+  livenessScore      Float?
+  qualityScore       Float?
+  outcome            String
+  reviewStatus       String               @default("not_required")
+  reviewReason       String?
+  reviewedById       String?
+  reviewedAt         DateTime?
+  capturedAt         DateTime
+  attendanceRecordId String?              @unique
+  createdAt          DateTime             @default(now())
+  school             School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  learner            Learner?             @relation(fields: [learnerId], references: [id])
+  device             Device               @relation(fields: [deviceId], references: [id])
+  occasion           AttendanceOccasion   @relation(fields: [occasionId], references: [id])
+  credential         BiometricCredential? @relation(fields: [credentialId], references: [id], onDelete: SetNull)
+  attendanceRecord   AttendanceRecord?    @relation(fields: [attendanceRecordId], references: [id])
+
+  @@unique([deviceId, clientEventId])
+  @@index([schoolId, reviewStatus, capturedAt])
+  @@index([learnerId, capturedAt])
 }
 
 model SyncBatch {

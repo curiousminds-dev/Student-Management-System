@@ -13,6 +13,8 @@ async function main() {
   await prisma.welfareObservation.deleteMany();
   await prisma.passwordResetToken.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.biometricCapture.deleteMany();
+  await prisma.biometricCredential.deleteMany();
   await prisma.syncBatch.deleteMany();
   await prisma.attendanceRecord.deleteMany();
   await prisma.qrCredential.deleteMany();
@@ -105,13 +107,63 @@ async function main() {
     },
   });
   const deviceSecret = "ncs-demo-device-secret";
-  await prisma.device.create({
+  const device = await prisma.device.create({
     data: {
       schoolId: school.id,
       name: "Main Gate Scanner",
       publicId: "NCS-GATE-01",
       secretHash: createHash("sha256").update(deviceSecret).digest("hex"),
       location: "Main gate",
+      capabilities: "qr,face,fingerprint",
+    },
+  });
+  const faceCredential = await prisma.biometricCredential.create({
+    data: {
+      learnerId: learners[0]!.id,
+      modality: "face",
+      provider: "device-adapter",
+      providerReference: "FACE-NCS-001",
+      status: "active",
+      qualityScore: 0.96,
+      consentRecorded: true,
+      consentAt: new Date(),
+      consentBy: "Guardian Nabirye",
+      enrolledById: users[0]!.id,
+      activatedAt: new Date(),
+    },
+  });
+  await prisma.biometricCredential.create({
+    data: {
+      learnerId: learners[1]!.id,
+      modality: "fingerprint",
+      provider: "device-adapter",
+      providerReference: "FINGER-NCS-002",
+      status: "active",
+      qualityScore: 0.94,
+      consentRecorded: true,
+      consentAt: new Date(),
+      consentBy: "Guardian Okello",
+      enrolledById: users[0]!.id,
+      activatedAt: new Date(),
+    },
+  });
+  await prisma.biometricCapture.create({
+    data: {
+      schoolId: school.id,
+      learnerId: learners[0]!.id,
+      occasionId: occasion.id,
+      deviceId: device.id,
+      credentialId: faceCredential.id,
+      clientEventId: "demo-biometric-review-001",
+      modality: "face",
+      provider: "device-adapter",
+      confidence: 0.82,
+      livenessScore: 0.7,
+      qualityScore: 0.88,
+      outcome: "needs_review",
+      reviewStatus: "pending",
+      reviewReason: "Verification below configured threshold",
+      capturedAt: new Date(),
     },
   });
   await prisma.welfareObservation.create({

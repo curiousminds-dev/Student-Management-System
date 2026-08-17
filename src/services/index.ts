@@ -58,6 +58,8 @@ import type {
   Subject,
   SyncRecord,
   User,
+  BiometricCredential,
+  BiometricCapture,
 } from "@/types";
 
 /* ---------------------------------------------------------------- auth --- */
@@ -478,6 +480,70 @@ export const deviceService = {
   },
   async sync(deviceId: string) {
     return mock({ deviceId, ok: true }, 900);
+  },
+};
+
+export const biometricService = {
+  async credentials(learnerId?: string): Promise<BiometricCredential[]> {
+    if (USE_MOCK_DATA) return mock([]);
+    return request(
+      `/biometrics/credentials${learnerId ? `?learnerId=${encodeURIComponent(learnerId)}` : ""}`,
+    );
+  },
+  async enroll(
+    learnerId: string,
+    payload: {
+      modality: "face" | "fingerprint";
+      provider: string;
+      providerReference?: string;
+      qualityScore?: number;
+      consentRecorded: true;
+      consentBy: string;
+    },
+  ) {
+    return request(`/learners/${learnerId}/biometrics`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async revoke(id: string, reason: string) {
+    return request(`/biometrics/credentials/${id}/revoke`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
+  async captures(): Promise<BiometricCapture[]> {
+    if (USE_MOCK_DATA) return mock([]);
+    return request("/attendance/biometric-captures");
+  },
+  async verify(payload: {
+    learnerId: string;
+    occasionId: string;
+    deviceId: string;
+    modality: "face" | "fingerprint";
+    provider: string;
+    confidence: number;
+    livenessScore?: number;
+  }) {
+    return request<{ accepted: boolean; outcome: string; captureId: string }>(
+      "/attendance/biometric-verify",
+      {
+        method: "POST",
+        headers: deviceService.authHeaders(),
+        body: JSON.stringify({
+          ...payload,
+          clientEventId: crypto.randomUUID(),
+          qualityScore: 0.95,
+          capturedAt: new Date().toISOString(),
+        }),
+      },
+    );
+  },
+  async review(id: string, decision: "approved" | "rejected", reason: string) {
+    return request(`/attendance/biometric-captures/${id}/review`, {
+      method: "POST",
+      body: JSON.stringify({ decision, reason }),
+    });
   },
 };
 

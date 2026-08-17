@@ -17,6 +17,8 @@ import {
   occasionSchema,
   scanSchema,
   syncSchema,
+  biometricEnrollmentSchema,
+  biometricVerificationSchema,
 } from "./schemas.js";
 import {
   createSession,
@@ -816,6 +818,287 @@ export async function buildApp(): Promise<FastifyInstance> {
       });
       await audit(request, "qr.revoked", "QrCredential", id, current, result);
       return result;
+    },
+  );
+
+  app.get(
+    "/api/v1/biometrics/credentials",
+    { preHandler: requirePermission("learners.view") },
+    async (request) => {
+      const learnerId = String((request.query as any).learnerId ?? "");
+      return prisma.biometricCredential.findMany({
+        where: {
+          learner: { schoolId: request.sessionUser!.schoolId },
+          ...(learnerId ? { learnerId } : {}),
+        },
+        include: {
+          learner: {
+            select: { firstName: true, lastName: true, admissionNumber: true, className: true },
+          },
+        },
+        orderBy: { enrolledAt: "desc" },
+      });
+    },
+  );
+  app.post(
+    "/api/v1/learners/:id/biometrics",
+    { preHandler: requirePermission("learners.manage") },
+    async (request, reply) => {
+      const learnerId = (request.params as any).id;
+      const input = biometricEnrollmentSchema.parse(request.body);
+      const learner = await prisma.learner.findFirstOrThrow({
+        where: { id: learnerId, schoolId: request.sessionUser!.schoolId, status: "active" },
+      });
+      const credential = await prisma.$transaction(async (tx) => {
+        await tx.biometricCredential.updateMany({
+          where: { learnerId, modality: input.modality, status: "active" },
+          data: { status: "replaced", revokedAt: new Date(), revokedReason: "New enrollment" },
+        });
+        return tx.biometricCredential.create({
+          data: {
+            ...input,
+            learnerId: learner.id,
+            enrolledById: request.sessionUser!.id,
+            status: input.providerReference ? "active" : "pending",
+            consentAt: new Date(),
+            activatedAt: input.providerReference ? new Date() : null,
+          },
+        });
+      });
+      await audit(request, "biometric.enrolled", "BiometricCredential", credential.id, undefined, {
+        learnerId,
+        modality: input.modality,
+        provider: input.provider,
+        consentRecorded: true,
+      });
+      return reply.status(201).send(credential);
+    },
+  );
+  app.post(
+    "/api/v1/biometrics/credentials/:id/revoke",
+    { preHandler: requirePermission("learners.manage") },
+    async (request) => {
+      const id = (request.params as any).id;
+      const before = await prisma.biometricCredential.findFirstOrThrow({
+        where: { id, learner: { schoolId: request.sessionUser!.schoolId } },
+      });
+      const reason = z.object({ reason: z.string().min(3).max(300) }).parse(request.body).reason;
+      const row = await prisma.biometricCredential.update({
+        where: { id },
+        data: { status: "revoked", revokedAt: new Date(), revokedReason: reason },
+      });
+      await audit(request, "biometric.revoked", "BiometricCredential", id, before, row);
+      return row;
+    },
+  );
+
+  app.post(
+    "/api/v1/attendance/biometric-verify",
+    { preHandler: [requirePermission("attendance.record"), authenticateDevice] },
+    async (request, reply) => {
+      const input = biometricVerificationSchema.parse(request.body);
+      if (input.deviceId !== request.authenticatedDeviceId)
+        throw Object.assign(new Error("Device identity mismatch"), { statusCode: 403 });
+      const device = await prisma.device.findFirstOrThrow({
+        where: { id: input.deviceId, schoolId: request.sessionUser!.schoolId, status: "active" },
+      });
+      const previousCapture = await prisma.biometricCapture.findUnique({
+        where: {
+          deviceId_clientEventId: {
+            deviceId: input.deviceId,
+            clientEventId: input.clientEventId,
+          },
+        },
+        include: { attendanceRecord: true, learner: true },
+      });
+      if (previousCapture) {
+        return {
+          accepted: Boolean(previousCapture.attendanceRecord),
+          idempotent: true,
+          outcome: previousCapture.outcome,
+          learner: previousCapture.learner ? learnerDto(previousCapture.learner) : undefined,
+          record: previousCapture.attendanceRecord,
+          captureId: previousCapture.id,
+        };
+      }
+      const capabilities = device.capabilities.split(",").map((value) => value.trim());
+      if (!capabilities.includes(input.modality))
+        return reply.status(422).send({ error: `Device is not approved for ${input.modality}` });
+      const credential = await prisma.biometricCredential.findFirst({
+        where: {
+          ...(input.credentialId ? { id: input.credentialId } : {}),
+          ...(input.learnerId ? { learnerId: input.learnerId } : {}),
+          modality: input.modality,
+          provider: input.provider,
+          status: "active",
+          learner: { schoolId: request.sessionUser!.schoolId, status: "active" },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        include: { learner: true },
+      });
+      const faceAccepted =
+        input.modality === "face" && input.confidence >= 0.86 && (input.livenessScore ?? 0) >= 0.75;
+      const fingerprintAccepted = input.modality === "fingerprint" && input.confidence >= 0.9;
+      const accepted = Boolean(credential && (faceAccepted || fingerprintAccepted));
+      const outcome = !credential ? "unknown_biometric" : accepted ? "accepted" : "needs_review";
+      const occasion = await prisma.attendanceOccasion.findFirst({
+        where: {
+          id: input.occasionId,
+          campus: { schoolId: request.sessionUser!.schoolId },
+          status: { in: ["active", "scheduled"] },
+        },
+      });
+      if (!occasion) return reply.status(422).send({ error: "Attendance occasion is not active" });
+      const duplicate = credential
+        ? await prisma.attendanceRecord.findUnique({
+            where: {
+              learnerId_occasionId: { learnerId: credential.learnerId, occasionId: occasion.id },
+            },
+          })
+        : null;
+      const result = await prisma.$transaction(async (tx) => {
+        const record =
+          accepted && credential && !duplicate
+            ? await tx.attendanceRecord.create({
+                data: {
+                  schoolId: request.sessionUser!.schoolId,
+                  clientEventId: input.clientEventId,
+                  learnerId: credential.learnerId,
+                  occasionId: occasion.id,
+                  deviceId: device.id,
+                  status: input.capturedAt > occasion.endsAt ? "late" : "present",
+                  outcome: input.capturedAt > occasion.endsAt ? "late" : "accepted",
+                  recordedAt: input.capturedAt,
+                  recordedById: request.sessionUser!.id,
+                  source: "biometric_device",
+                  captureMethod: input.modality,
+                  confidence: input.confidence,
+                  livenessScore: input.livenessScore,
+                },
+              })
+            : null;
+        const capture = await tx.biometricCapture.create({
+          data: {
+            schoolId: request.sessionUser!.schoolId,
+            learnerId: credential?.learnerId,
+            occasionId: occasion.id,
+            deviceId: device.id,
+            credentialId: credential?.id,
+            clientEventId: input.clientEventId,
+            modality: input.modality,
+            provider: input.provider,
+            providerEventId: input.providerEventId,
+            confidence: input.confidence,
+            livenessScore: input.livenessScore,
+            qualityScore: input.qualityScore,
+            outcome: duplicate ? "duplicate" : outcome,
+            reviewStatus: outcome === "needs_review" ? "pending" : "not_required",
+            reviewReason:
+              outcome === "needs_review" ? "Verification below configured threshold" : null,
+            capturedAt: input.capturedAt,
+            attendanceRecordId: record?.id,
+          },
+        });
+        return { record, capture };
+      });
+      await audit(
+        request,
+        "biometric.capture.processed",
+        "BiometricCapture",
+        result.capture.id,
+        undefined,
+        {
+          modality: input.modality,
+          outcome: result.capture.outcome,
+        },
+      );
+      return {
+        accepted: Boolean(result.record),
+        outcome: duplicate ? "duplicate" : outcome,
+        learner: credential ? learnerDto(credential.learner) : undefined,
+        record: result.record,
+        captureId: result.capture.id,
+      };
+    },
+  );
+  app.get(
+    "/api/v1/attendance/biometric-captures",
+    { preHandler: requirePermission("attendance.view") },
+    async (request) =>
+      prisma.biometricCapture.findMany({
+        where: { schoolId: request.sessionUser!.schoolId },
+        include: {
+          learner: { select: { firstName: true, lastName: true, admissionNumber: true } },
+          device: { select: { name: true } },
+        },
+        orderBy: { capturedAt: "desc" },
+        take: 250,
+      }),
+  );
+  app.post(
+    "/api/v1/attendance/biometric-captures/:id/review",
+    { preHandler: requirePermission("attendance.record") },
+    async (request, reply) => {
+      const id = (request.params as any).id;
+      const input = z
+        .object({ decision: z.enum(["approved", "rejected"]), reason: z.string().min(3) })
+        .parse(request.body);
+      const before = await prisma.biometricCapture.findFirstOrThrow({
+        where: { id, schoolId: request.sessionUser!.schoolId, reviewStatus: "pending" },
+      });
+      if (input.decision === "approved" && !before.learnerId) {
+        return reply.status(422).send({ error: "Assign a learner before approving this capture" });
+      }
+      const row = await prisma.$transaction(async (tx) => {
+        let attendanceRecordId = before.attendanceRecordId;
+        if (input.decision === "approved" && before.learnerId && !attendanceRecordId) {
+          const duplicate = await tx.attendanceRecord.findUnique({
+            where: {
+              learnerId_occasionId: {
+                learnerId: before.learnerId,
+                occasionId: before.occasionId,
+              },
+            },
+          });
+          if (duplicate) {
+            attendanceRecordId = duplicate.id;
+          } else {
+            const occasion = await tx.attendanceOccasion.findUniqueOrThrow({
+              where: { id: before.occasionId },
+            });
+            const record = await tx.attendanceRecord.create({
+              data: {
+                schoolId: before.schoolId,
+                learnerId: before.learnerId,
+                occasionId: before.occasionId,
+                deviceId: before.deviceId,
+                status: before.capturedAt > occasion.endsAt ? "late" : "present",
+                outcome: before.capturedAt > occasion.endsAt ? "late" : "accepted",
+                recordedAt: before.capturedAt,
+                recordedById: request.sessionUser!.id,
+                source: "biometric_manual_review",
+                captureMethod: before.modality,
+                confidence: before.confidence,
+                livenessScore: before.livenessScore,
+              },
+            });
+            attendanceRecordId = record.id;
+          }
+        }
+        return tx.biometricCapture.update({
+          where: { id },
+          data: {
+            attendanceRecordId,
+            outcome: input.decision === "approved" ? "accepted_after_review" : "rejected",
+            reviewStatus: input.decision,
+            reviewReason: input.reason,
+            reviewedById: request.sessionUser!.id,
+            reviewedAt: new Date(),
+          },
+        });
+      });
+      await audit(request, "biometric.capture.reviewed", "BiometricCapture", id, before, row);
+      return row;
     },
   );
 

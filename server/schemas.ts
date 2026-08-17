@@ -36,6 +36,33 @@ export const syncSchema = z.object({
   clientBatchId: z.string().min(1),
   events: z.array(scanSchema.extend({ clientEventId: z.string().min(1) })).max(500),
 });
+export const biometricEnrollmentSchema = z.object({
+  modality: z.enum(["face", "fingerprint"]),
+  provider: z.string().min(2).max(80),
+  providerReference: z.string().min(3).max(200).optional(),
+  qualityScore: z.number().min(0).max(1).optional(),
+  consentRecorded: z.literal(true),
+  consentBy: z.string().min(2).max(120),
+  expiresAt: z.coerce.date().optional(),
+});
+export const biometricVerificationSchema = z
+  .object({
+    learnerId: z.string().optional(),
+    credentialId: z.string().optional(),
+    occasionId: z.string(),
+    deviceId: z.string(),
+    clientEventId: z.string().min(8),
+    modality: z.enum(["face", "fingerprint"]),
+    provider: z.string().min(2).max(80),
+    providerEventId: z.string().max(200).optional(),
+    confidence: z.number().min(0).max(1),
+    livenessScore: z.number().min(0).max(1).optional(),
+    qualityScore: z.number().min(0).max(1).optional(),
+    capturedAt: z.coerce.date().default(() => new Date()),
+  })
+  .refine((value) => value.learnerId || value.credentialId, {
+    message: "learnerId or credentialId is required",
+  });
 export const messageSchema = z.object({
   channel: z.enum(["sms", "email", "in_app"]),
   recipients: z.array(z.string()).min(1).max(1000),
